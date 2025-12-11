@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3 uid="uid://b5v42w3nm4eox"]
+
+[ext_resource type="Script" uid="uid://tewu574qy8ba" path="res://scripts/player.gd" id="1_3vyb7"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_u8vuu"]
+radius = 0.4
+height = 1.8
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("1_3vyb7")
+rotation_speed = 5.0
+
+[node name="Camera3D" type="Camera3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_u8vuu")

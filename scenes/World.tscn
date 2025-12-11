@@ -1,0 +1,52 @@
+[gd_scene load_steps=12 format=3 uid="uid://bf4gfw1by2ot3"]
+
+[ext_resource type="Script" uid="uid://bbgoastxikr1f" path="res://scripts/TerrainGenerator/core/TerrainGenerator.gd" id="1_32lhk"]
+[ext_resource type="Resource" uid="uid://dalj3jo0tnmfd" path="res://scripts/TerrainGenerator/configs/presets/test_worldconfig.tres" id="2_1lgw5"]
+[ext_resource type="Resource" uid="uid://06ok8j1dhx2u" path="res://scripts/TerrainGenerator/configs/presets/test_noiseconfig.tres" id="3_hlk0d"]
+[ext_resource type="Resource" uid="uid://uglmb1knhxhw" path="res://scripts/TerrainGenerator/configs/presets/test_vegetationconfig.tres" id="4_0uv0p"]
+[ext_resource type="PackedScene" uid="uid://b5v42w3nm4eox" path="res://scenes/player.tscn" id="5_1lgw5"]
+[ext_resource type="Texture2D" uid="uid://bc67gqcdbktfi" path="res://textures/coast_sand_rocks.jpg" id="5_hlk0d"]
+
+[sub_resource type="Gradient" id="Gradient_0uv0p"]
+colors = PackedColorArray(1, 0, 0, 1, 1, 0, 0, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_b3faq"]
+gradient = SubResource("Gradient_0uv0p")
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_kqs1s"]
+sky_top_color = Color(0.5882565, 0.9393711, 0.9997851, 1)
+sky_horizon_color = Color(0.77744365, 0.84242314, 0.8815111, 1)
+ground_bottom_color = Color(0.3515629, 0.3515629, 0.35156286, 1)
+ground_horizon_color = Color(0.6542198, 0.742696, 0.8146699, 1)
+
+[sub_resource type="Sky" id="Sky_32lhk"]
+sky_material = SubResource("ProceduralSkyMaterial_kqs1s")
+
+[sub_resource type="Environment" id="Environment_32lhk"]
+background_mode = 2
+background_energy_multiplier = 0.5
+sky = SubResource("Sky_32lhk")
+
+[node name="Node3D" type="Node3D"]
+
+[node name="TerrainGenerator" type="Node3D" parent="."]
+script = ExtResource("1_32lhk")
+world_config = ExtResource("2_1lgw5")
+noise_config = ExtResource("3_hlk0d")
+veg_config = ExtResource("4_0uv0p")
+splat_map = SubResource("GradientTexture2D_b3faq")
+tex_grass = ExtResource("5_hlk0d")
+player_path = NodePath("../Player")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.8660254, 0.5, 0, -0.5, 0.8660254, 20, 10.372896, 58.93544)
+visible = false
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_32lhk")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.70710677, 0.24184473, -0.6644629, 0, 0.93969256, 0.3420201, 0.70710677, -0.24184473, 0.6644629, 0, 9.069779, 4.8188477)
+shadow_enabled = true
+
+[node name="Player" parent="." instance=ExtResource("5_1lgw5")]

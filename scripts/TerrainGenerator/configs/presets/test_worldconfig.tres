@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="WorldConfig" load_steps=2 format=3 uid="uid://dalj3jo0tnmfd"]
+
+[ext_resource type="Script" uid="uid://cd8qtxmdo3cnl" path="res://scripts/TerrainGenerator/configs/WorldConfig.gd" id="1_nlbwl"]
+
+[resource]
+script = ExtResource("1_nlbwl")
+metadata/_custom_type_script = "uid://cd8qtxmdo3cnl"
