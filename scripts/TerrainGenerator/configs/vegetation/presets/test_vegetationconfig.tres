@@ -1,8 +1,8 @@
 [gd_resource type="Resource" script_class="VegetationConfig" load_steps=4 format=3 uid="uid://uglmb1knhxhw"]
 
-[ext_resource type="ArrayMesh" uid="uid://ykdf6pvqsjlh" path="res://assets/grass.res" id="1_2y7np"]
-[ext_resource type="Script" uid="uid://ccij35yi61h1j" path="res://scripts/TerrainGenerator/configs/VegetationConfig.gd" id="1_3kn6b"]
-[ext_resource type="ArrayMesh" uid="uid://cisylc3rtx4cy" path="res://assets/tree.res" id="3_lj0ue"]
+[ext_resource type="ArrayMesh" uid="uid://ykdf6pvqsjlh" path="res://Models/vegetation/grass.res" id="1_2y7np"]
+[ext_resource type="Script" uid="uid://ccij35yi61h1j" path="res://scripts/TerrainGenerator/configs/vegetation/VegetationConfig.gd" id="1_3kn6b"]
+[ext_resource type="ArrayMesh" uid="uid://cisylc3rtx4cy" path="res://Models/vegetation/tree.res" id="3_lj0ue"]
 
 [resource]
 script = ExtResource("1_3kn6b")

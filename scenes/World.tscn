@@ -1,12 +1,12 @@
 [gd_scene load_steps=19 format=3 uid="uid://bf4gfw1by2ot3"]
 
-[ext_resource type="Script" uid="uid://bbgoastxikr1f" path="res://scripts/TerrainGenerator/core/TerrainGenerator.gd" id="1_32lhk"]
-[ext_resource type="Resource" uid="uid://dalj3jo0tnmfd" path="res://scripts/TerrainGenerator/configs/presets/test_worldconfig.tres" id="2_1lgw5"]
-[ext_resource type="Resource" uid="uid://06ok8j1dhx2u" path="res://scripts/TerrainGenerator/configs/presets/test_noiseconfig.tres" id="3_hlk0d"]
-[ext_resource type="Resource" uid="uid://uglmb1knhxhw" path="res://scripts/TerrainGenerator/configs/presets/test_vegetationconfig.tres" id="4_0uv0p"]
+[ext_resource type="Script" uid="uid://bbgoastxikr1f" path="res://scripts/TerrainGenerator/TerrainGenerator.gd" id="1_32lhk"]
+[ext_resource type="Resource" uid="uid://dalj3jo0tnmfd" path="res://scripts/TerrainGenerator/configs/world/presets/test_worldconfig.tres" id="2_1lgw5"]
+[ext_resource type="Resource" uid="uid://06ok8j1dhx2u" path="res://scripts/TerrainGenerator/configs/noise/presets/test_noiseconfig.tres" id="3_hlk0d"]
+[ext_resource type="Resource" uid="uid://uglmb1knhxhw" path="res://scripts/TerrainGenerator/configs/vegetation/presets/test_vegetationconfig.tres" id="4_0uv0p"]
 [ext_resource type="PackedScene" uid="uid://b5v42w3nm4eox" path="res://scenes/player.tscn" id="5_1lgw5"]
-[ext_resource type="Script" uid="uid://s5qsie30t0f6" path="res://scripts/TerrainGenerator/configs/BiomeConfig.gd" id="5_b3faq"]
-[ext_resource type="Resource" uid="uid://ddtqns1mvuqkg" path="res://scripts/TerrainGenerator/configs/presets/test_biomeconfig.tres" id="6_ygioq"]
+[ext_resource type="Script" uid="uid://s5qsie30t0f6" path="res://scripts/TerrainGenerator/configs/biome/BiomeConfig.gd" id="5_b3faq"]
+[ext_resource type="Resource" uid="uid://ddtqns1mvuqkg" path="res://scripts/TerrainGenerator/configs/biome/presets/test_biomeconfig.tres" id="6_ygioq"]
 [ext_resource type="Texture2D" uid="uid://dffinhn2bmjbq" path="res://textures/Grass_rock/rocky_terrain_02_diff_1k.jpg" id="7_b3faq"]
 [ext_resource type="Texture2D" uid="uid://x4ti7l10wigk" path="res://textures/Rocky/forest_ground_04_diff_1k.jpg" id="8_ygioq"]
 

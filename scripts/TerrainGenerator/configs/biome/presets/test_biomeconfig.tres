@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="BiomeConfig" load_steps=2 format=3 uid="uid://ddtqns1mvuqkg"]
 
-[ext_resource type="Script" uid="uid://s5qsie30t0f6" path="res://scripts/TerrainGenerator/configs/BiomeConfig.gd" id="1_xh5vx"]
+[ext_resource type="Script" uid="uid://s5qsie30t0f6" path="res://scripts/TerrainGenerator/configs/biome/BiomeConfig.gd" id="1_xh5vx"]
 
 [resource]
 script = ExtResource("1_xh5vx")

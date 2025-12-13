@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="NoiseConfig" load_steps=2 format=3 uid="uid://06ok8j1dhx2u"]
 
-[ext_resource type="Script" uid="uid://b6xodtqbya7vy" path="res://scripts/TerrainGenerator/configs/NoiseConfig.gd" id="1_dwpmr"]
+[ext_resource type="Script" uid="uid://b6xodtqbya7vy" path="res://scripts/TerrainGenerator/configs/noise/NoiseConfig.gd" id="1_dwpmr"]
 
 [resource]
 script = ExtResource("1_dwpmr")

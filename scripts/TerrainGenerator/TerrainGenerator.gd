@@ -10,7 +10,6 @@ extends Node3D
 # --- Assets ---
 @export_group("Materials")
 @export var terrain_shader: Shader = preload("res://shaders/terrain_shader.gdshader")
-# @export var splat_map: Texture2D # <<< REMOVED: No longer static/exported
 @export var tex_grass: Texture2D
 @export var tex_dirt: Texture2D
 @export var tex_rock: Texture2D
