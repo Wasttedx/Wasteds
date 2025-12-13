@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://bf4gfw1by2ot3"]
+[gd_scene load_steps=20 format=3 uid="uid://bf4gfw1by2ot3"]
 
 [ext_resource type="Script" uid="uid://bbgoastxikr1f" path="res://scripts/TerrainGenerator/TerrainGenerator.gd" id="1_32lhk"]
 [ext_resource type="Resource" uid="uid://dalj3jo0tnmfd" path="res://scripts/TerrainGenerator/configs/world/presets/test_worldconfig.tres" id="2_1lgw5"]
@@ -7,29 +7,29 @@
 [ext_resource type="PackedScene" uid="uid://b5v42w3nm4eox" path="res://scenes/player.tscn" id="5_1lgw5"]
 [ext_resource type="Script" uid="uid://s5qsie30t0f6" path="res://scripts/TerrainGenerator/configs/biome/BiomeConfig.gd" id="5_b3faq"]
 [ext_resource type="Resource" uid="uid://ddtqns1mvuqkg" path="res://scripts/TerrainGenerator/configs/biome/presets/test_biomeconfig.tres" id="6_ygioq"]
+[ext_resource type="Texture2D" uid="uid://cwh816giomw8v" path="res://textures/Grass_rock/rocky_terrain_02_spec_1k.png" id="7_7c4bj"]
 [ext_resource type="Texture2D" uid="uid://dffinhn2bmjbq" path="res://textures/Grass_rock/rocky_terrain_02_diff_1k.jpg" id="7_b3faq"]
+[ext_resource type="Texture2D" uid="uid://dxnlh2mhgugft" path="res://textures/Grass_rock/rocky_terrain_02_disp_1k.png" id="8_nrtoj"]
 [ext_resource type="Texture2D" uid="uid://x4ti7l10wigk" path="res://textures/Rocky/forest_ground_04_diff_1k.jpg" id="8_ygioq"]
+[ext_resource type="Script" uid="uid://dn37reqcaxptj" path="res://scripts/TerrainGenerator/configs/TerrainTexture.gd" id="10_c0d7e"]
+[ext_resource type="Texture2D" uid="uid://cli0l5ur0y8f" path="res://textures/Rocky/forest_ground_04_disp_1k.png" id="11_nrtoj"]
+[ext_resource type="Texture2D" uid="uid://cidhx5rgmxx66" path="res://textures/Rocky/forest_ground_04_rough_1k.exr" id="12_i4b1j"]
 
-[sub_resource type="Gradient" id="Gradient_b3faq"]
-offsets = PackedFloat32Array(0, 0.942029)
-colors = PackedColorArray(0.34669393, 0.12021034, 0.020933194, 1, 0.41297138, 0.20946437, 0.12025881, 1)
+[sub_resource type="Resource" id="Resource_o1tcx"]
+script = ExtResource("10_c0d7e")
+diffuse = ExtResource("7_b3faq")
+normal = ExtResource("7_7c4bj")
+displacement = ExtResource("8_nrtoj")
+tiling_scale = 1.0
+metadata/_custom_type_script = "uid://dn37reqcaxptj"
 
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_ygioq"]
-
-[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_pdh0q"]
-noise = SubResource("FastNoiseLite_ygioq")
-color_ramp = SubResource("Gradient_b3faq")
-
-[sub_resource type="Gradient" id="Gradient_7c4bj"]
-colors = PackedColorArray(0.5882353, 0, 0.8039216, 1, 0.17324981, 0.00016860203, 0.24973628, 1)
-
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_nrtoj"]
-noise_type = 3
-frequency = 0.0254
-
-[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_i4b1j"]
-noise = SubResource("FastNoiseLite_nrtoj")
-color_ramp = SubResource("Gradient_7c4bj")
+[sub_resource type="Resource" id="Resource_c0d7e"]
+script = ExtResource("10_c0d7e")
+diffuse = ExtResource("8_ygioq")
+roughness = ExtResource("12_i4b1j")
+displacement = ExtResource("11_nrtoj")
+tiling_scale = 1.0
+metadata/_custom_type_script = "uid://dn37reqcaxptj"
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_kqs1s"]
 sky_top_color = Color(0.5882565, 0.9393711, 0.9997851, 1)
@@ -43,6 +43,8 @@ sky_material = SubResource("ProceduralSkyMaterial_kqs1s")
 [sub_resource type="Environment" id="Environment_32lhk"]
 background_mode = 2
 sky = SubResource("Sky_32lhk")
+glow_enabled = true
+fog_enabled = true
 
 [node name="Node3D" type="Node3D"]
 
@@ -52,10 +54,8 @@ world_config = ExtResource("2_1lgw5")
 noise_config = ExtResource("3_hlk0d")
 veg_config = ExtResource("4_0uv0p")
 biome_configs = Array[ExtResource("5_b3faq")]([ExtResource("6_ygioq")])
-tex_grass = ExtResource("7_b3faq")
-tex_dirt = SubResource("NoiseTexture2D_pdh0q")
-tex_rock = ExtResource("8_ygioq")
-tex_corrupt = SubResource("NoiseTexture2D_i4b1j")
+tex_grass = SubResource("Resource_o1tcx")
+tex_rock = SubResource("Resource_c0d7e")
 player_path = NodePath("../Player")
 
 [node name="Camera3D" type="Camera3D" parent="."]

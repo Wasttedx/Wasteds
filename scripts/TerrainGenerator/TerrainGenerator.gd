@@ -1,4 +1,5 @@
 extends Node3D
+class_name TerrainGenerator
 
 # --- Dependencies (Configs) ---
 @export_group("Configs")
@@ -10,20 +11,20 @@ extends Node3D
 # --- Assets ---
 @export_group("Materials")
 @export var terrain_shader: Shader = preload("res://shaders/terrain_shader.gdshader")
-@export var tex_grass: Texture2D
-@export var tex_dirt: Texture2D
-@export var tex_rock: Texture2D
-@export var tex_corrupt: Texture2D
+@export var tex_grass: TerrainTexture 
+@export var tex_dirt: TerrainTexture 
+@export var tex_rock: TerrainTexture 
+@export var tex_corrupt: TerrainTexture # <<< RESTORED: Needed for the shader's 'A' channel
 
 @export_group("Target")
 @export var player_path: NodePath
 
 # --- Systems ---
-var noise_builder
-var material_lib
-var veg_spawner
-var biome_selector
-var splat_map_generator # <<< Variable for the SplatMapGenerator service
+var noise_builder: NoiseBuilder
+var material_lib: MaterialLibrary
+var veg_spawner: VegetationSpawner
+var biome_selector: BiomeSelector
+var splat_map_generator: SplatMapGenerator # Variable for the SplatMapGenerator service
 
 var chunks := {}
 var generation_queue := []
@@ -40,6 +41,7 @@ func _ready():
 	
 	# Snap player to ground
 	if player:
+		# Use the height from the noise builder
 		var h = noise_builder.get_height(player.global_position.x, player.global_position.z)
 		player.global_position.y = h + 2.0
 
@@ -47,35 +49,40 @@ func _process(_delta):
 	if not player: return
 	_update_chunks()
 	_process_queue()
-	# The veg_spawner will no longer be updated here; grass is updated per chunk now.
 
 func _initialize_systems():
-	# Initialize services with configs
+	# 1. Initialize services with configs
 	noise_builder = NoiseBuilder.new(noise_config)
 	
-	# Initialize Biome Selector
+	# 2. Initialize Biome Selector
 	biome_selector = BiomeSelector.new(biome_configs, noise_config.seed, noise_builder)
 	
-	# --- Initialize SplatMap Generator ---
+	# 3. Initialize SplatMap Generator
 	splat_map_generator = SplatMapGenerator.new(noise_builder, world_config)
-	# ----------------------------------------
 	
+	# 4. Prepare Textures Dictionary (For MaterialLibrary)
 	var textures = {
-		# "splat_map" is removed here
-		"tex_grass": tex_grass, "tex_dirt": tex_dirt,	
-		"tex_rock": tex_rock, "tex_corrupt": tex_corrupt
+		"tex_grass": tex_grass, 
+		"tex_dirt": tex_dirt, 	
+		"tex_rock": tex_rock, 
+		"tex_corrupt": tex_corrupt # <<< RESTORED: Include the corrupt texture for MaterialLibrary
 	}
+	
+	# 5. Initialize Material Library
 	material_lib = MaterialLibrary.new(terrain_shader, textures)
 	
+	# 6. Initialize Vegetation Spawner
 	veg_spawner = VegetationSpawner.new(veg_config, noise_builder, world_config.chunk_world_size)
 
 func _create_defaults_if_missing():
 	# Creates temporary placeholders if Config resources are empty
 	if not veg_config.grass_mesh:
-		var p = QuadMesh.new(); p.size = Vector2(0.4, 0.8); p.center_offset = Vector3(0,0.4,0)
+		# Simple QuadMesh placeholder
+		var p = QuadMesh.new(); p.size = Vector2(0.4, 0.8); p.center_offset = Vector3(0, 0.4, 0)
 		veg_config.grass_mesh = p
 
 func _update_chunks():
+	# Calculate player chunk coordinates
 	var p_pos = player.global_position if player else Vector3.ZERO
 	var p_cx = int(floor(p_pos.x / world_config.chunk_world_size))
 	var p_cz = int(floor(p_pos.z / world_config.chunk_world_size))
@@ -83,6 +90,7 @@ func _update_chunks():
 	var range_c = world_config.view_distance_chunks
 	var active_coords = {}
 	
+	# Loop through the view distance grid
 	for z in range(-range_c, range_c + 1):
 		for x in range(-range_c, range_c + 1):
 			var c = Vector2i(p_cx + x, p_cz + z)
@@ -103,9 +111,19 @@ func _process_queue():
 		var c = generation_queue.pop_front()
 		if chunks.has(c): continue
 		
+		# Create the chunk instance
 		var chunk = TerrainChunk.new()
 		add_child(chunk)
-		# Dependency Injection: Pass the new generator service
-		chunk.setup(c, world_config, noise_builder, material_lib, veg_spawner, biome_selector, splat_map_generator) # <<< PASS NEW SERVICE
+		
+		# Dependency Injection: Pass all necessary services to the chunk's setup function
+		chunk.setup(c, 
+					world_config, 
+					noise_builder, 
+					material_lib, 
+					veg_spawner, 
+					biome_selector, 
+					splat_map_generator # PASS THE SPLAT MAP GENERATOR SERVICE
+					) 
+		
 		chunks[c] = chunk
 		processed += 1

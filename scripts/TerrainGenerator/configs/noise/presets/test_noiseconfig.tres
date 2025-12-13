@@ -5,5 +5,4 @@
 [resource]
 script = ExtResource("1_dwpmr")
 seed = 0
-frequency = 0.02
 metadata/_custom_type_script = "uid://b6xodtqbya7vy"

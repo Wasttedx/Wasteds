@@ -17,9 +17,9 @@ class_name BiomeConfig
 @export var wetness: float = 0.5 # Affects both noise and material blend
 
 # --- Material / Texture Sets ---
-# This is a dictionary of texture resources (e.g., textures["tex_grass"] = new_grass_tex)
+# This is a dictionary of TerrainTexture resources (e.g., texture_overrides["tex_grass"] = new_grass_texture_resource)
 @export_group("Material Overrides")
-@export var texture_overrides: Dictionary = {}
+@export var texture_overrides: Dictionary = {} # <<< KEY CHANGE: Now holds TerrainTexture resources
 @export var color_tint: Color = Color.WHITE # Overall tint applied to the material
 
 # --- Vegetation Rules ---
