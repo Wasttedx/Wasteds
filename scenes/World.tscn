@@ -1,17 +1,51 @@
-[gd_scene load_steps=12 format=3 uid="uid://bf4gfw1by2ot3"]
+[gd_scene load_steps=23 format=3 uid="uid://bf4gfw1by2ot3"]
 
 [ext_resource type="Script" uid="uid://bbgoastxikr1f" path="res://scripts/TerrainGenerator/core/TerrainGenerator.gd" id="1_32lhk"]
 [ext_resource type="Resource" uid="uid://dalj3jo0tnmfd" path="res://scripts/TerrainGenerator/configs/presets/test_worldconfig.tres" id="2_1lgw5"]
 [ext_resource type="Resource" uid="uid://06ok8j1dhx2u" path="res://scripts/TerrainGenerator/configs/presets/test_noiseconfig.tres" id="3_hlk0d"]
 [ext_resource type="Resource" uid="uid://uglmb1knhxhw" path="res://scripts/TerrainGenerator/configs/presets/test_vegetationconfig.tres" id="4_0uv0p"]
 [ext_resource type="PackedScene" uid="uid://b5v42w3nm4eox" path="res://scenes/player.tscn" id="5_1lgw5"]
+[ext_resource type="Script" uid="uid://s5qsie30t0f6" path="res://scripts/TerrainGenerator/configs/BiomeConfig.gd" id="5_b3faq"]
 [ext_resource type="Texture2D" uid="uid://bc67gqcdbktfi" path="res://textures/coast_sand_rocks.jpg" id="5_hlk0d"]
+[ext_resource type="Resource" uid="uid://ddtqns1mvuqkg" path="res://scripts/TerrainGenerator/configs/presets/test_biomeconfig.tres" id="6_ygioq"]
 
 [sub_resource type="Gradient" id="Gradient_0uv0p"]
 colors = PackedColorArray(1, 0, 0, 1, 1, 0, 0, 1)
 
 [sub_resource type="GradientTexture2D" id="GradientTexture2D_b3faq"]
 gradient = SubResource("Gradient_0uv0p")
+
+[sub_resource type="Gradient" id="Gradient_b3faq"]
+offsets = PackedFloat32Array(0, 0.942029)
+colors = PackedColorArray(0.34669393, 0.12021034, 0.020933194, 1, 0.41297138, 0.20946437, 0.12025881, 1)
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_ygioq"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_pdh0q"]
+noise = SubResource("FastNoiseLite_ygioq")
+color_ramp = SubResource("Gradient_b3faq")
+
+[sub_resource type="Gradient" id="Gradient_ygioq"]
+colors = PackedColorArray(0.19076231, 0.19076234, 0.19076231, 1, 0.27387273, 0.27387273, 0.27387273, 1)
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_pdh0q"]
+noise_type = 2
+frequency = 0.0229
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_h1bdy"]
+noise = SubResource("FastNoiseLite_pdh0q")
+color_ramp = SubResource("Gradient_ygioq")
+
+[sub_resource type="Gradient" id="Gradient_7c4bj"]
+colors = PackedColorArray(0.5882353, 0, 0.8039216, 1, 0.17324981, 0.00016860203, 0.24973628, 1)
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_nrtoj"]
+noise_type = 3
+frequency = 0.0254
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_i4b1j"]
+noise = SubResource("FastNoiseLite_nrtoj")
+color_ramp = SubResource("Gradient_7c4bj")
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_kqs1s"]
 sky_top_color = Color(0.5882565, 0.9393711, 0.9997851, 1)
@@ -24,7 +58,6 @@ sky_material = SubResource("ProceduralSkyMaterial_kqs1s")
 
 [sub_resource type="Environment" id="Environment_32lhk"]
 background_mode = 2
-background_energy_multiplier = 0.5
 sky = SubResource("Sky_32lhk")
 
 [node name="Node3D" type="Node3D"]
@@ -34,8 +67,12 @@ script = ExtResource("1_32lhk")
 world_config = ExtResource("2_1lgw5")
 noise_config = ExtResource("3_hlk0d")
 veg_config = ExtResource("4_0uv0p")
+biome_configs = Array[ExtResource("5_b3faq")]([ExtResource("6_ygioq")])
 splat_map = SubResource("GradientTexture2D_b3faq")
 tex_grass = ExtResource("5_hlk0d")
+tex_dirt = SubResource("NoiseTexture2D_pdh0q")
+tex_rock = SubResource("NoiseTexture2D_h1bdy")
+tex_corrupt = SubResource("NoiseTexture2D_i4b1j")
 player_path = NodePath("../Player")
 
 [node name="Camera3D" type="Camera3D" parent="."]

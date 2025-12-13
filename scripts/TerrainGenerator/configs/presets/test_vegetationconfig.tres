@@ -8,6 +8,7 @@
 script = ExtResource("1_3kn6b")
 tree_count = 1
 rock_count = 0
+tree_scale = Vector2(0.2, 0.4)
 grass_mesh = ExtResource("1_2y7np")
 tree_mesh = ExtResource("3_lj0ue")
 metadata/_custom_type_script = "uid://ccij35yi61h1j"

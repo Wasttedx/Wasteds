@@ -1,41 +1,68 @@
 shader_type spatial;
 
-// Textures
-uniform sampler2D splat_map : source_color; // Your Black/White Noise
-uniform sampler2D tex_grass : source_color;
-uniform sampler2D tex_dirt  : source_color;
+// The Splat Map is the crucial texture (RGB) that tells the shader how to blend
+uniform sampler2D splat_map;
 
-// Settings
-uniform vec2 splat_scale = vec2(64.0, 64.0); // How often the grass/dirt repeats
-uniform float roughness : hint_range(0.0, 1.0) = 0.9;
+// Textures loaded from TerrainGenerator.gd / MaterialLibrary.gd
+uniform sampler2D tex_grass;
+uniform sampler2D tex_dirt;
+uniform sampler2D tex_rock;
+uniform sampler2D tex_corrupt;
 
-varying vec2 uv_world;
+// Biome parameters
+uniform vec4 color_tint : source_color = vec4(1.0, 1.0, 1.0, 1.0);
+uniform float wetness_level : hint_range(0.0, 1.0) = 0.0;
 
-void vertex() {
-    // We scale UV by splat_scale so the grass texture repeats many times
-    // instead of stretching one giant blade of grass over the whole mountain
-    uv_world = UV * splat_scale;
-}
+// Scaling for texture tiling
+const float TILE_SCALE = 16.0;
 
 void fragment() {
-    // 1. Get the noise value (0.0 is black, 1.0 is white)
-    float noise_val = texture(splat_map, UV).r;
+	// 1. Get UV coordinates for texture sampling
+	vec2 uv = UV * TILE_SCALE;
 
-    // 2. Get the colors from your gradient textures
-    vec3 grass = texture(tex_grass, uv_world).rgb;
-    vec3 dirt = texture(tex_dirt, uv_world).rgb;
+	// 2. Read the splat map
+	vec4 blend_factors = texture(splat_map, UV);
 
-    // 3. Mix them based on the noise
-    // If noise is Black -> Dirt. If White -> Grass.
-    // We add a smoothstep to make the transition sharper/cleaner
-    float weight = smoothstep(0.4, 0.6, noise_val);
-    
-    vec3 final_color = mix(dirt, grass, weight);
+	// FIX 1: Normalize blend factors and force Alpha to 0
+	// This ensures the RGB channels sum to 1.0, preventing incorrect saturation/washout.
+	float total_weight = blend_factors.r + blend_factors.g + blend_factors.b;
 
-    ALBEDO = final_color;
-    ROUGHNESS = roughness;
-    METALLIC = 0.0;
-    
-    // This helps shadows appear correctly on the surface
-    NORMAL = normalize(NORMAL);
+	// Avoid division by zero, but this is usually safe for splat maps
+	if (total_weight > 0.0) {
+		blend_factors.rgb /= total_weight;
+	} else {
+		// Default to pure grass if all weights are zero
+		blend_factors.r = 1.0;
+	}
+	blend_factors.a = 0.0; // Still keeping alpha at 0 to avoid corruption mix issues
+
+	// 3. Sample the textures
+	vec4 grass_color = texture(tex_grass, uv);
+	vec4 dirt_color = texture(tex_dirt, uv);
+	vec4 rock_color = texture(tex_rock, uv);
+	vec4 corrupt_color = texture(tex_corrupt, uv);
+
+	// 4. Blend using additive, weighted contribution
+	vec4 final_color = vec4(0.0);
+
+	// Red (Grass)
+	final_color += grass_color * blend_factors.r;
+
+	// Green (Dirt)
+	final_color += dirt_color * blend_factors.g;
+
+	// Blue (Rock)
+	final_color += rock_color * blend_factors.b;
+
+	// Alpha (Corrupt) - Note: A is 0.0 now, so this line does nothing, which is correct for debugging.
+	final_color += corrupt_color * blend_factors.a;
+
+	// Apply biome tint (now white)
+	final_color.rgb *= color_tint.rgb;
+
+	// Apply wetness (Simple example: makes surface more reflective)
+	METALLIC = 0.0;
+	ROUGHNESS = mix(0.8, 0.2, wetness_level);
+
+	ALBEDO = final_color.rgb;
 }

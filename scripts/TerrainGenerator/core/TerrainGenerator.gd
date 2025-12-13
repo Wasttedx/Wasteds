@@ -5,6 +5,7 @@ extends Node3D
 @export var world_config: WorldConfig
 @export var noise_config: NoiseConfig
 @export var veg_config: VegetationConfig
+@export var biome_configs: Array[BiomeConfig] # <<< ADDED Biome Configs
 
 # --- Assets ---
 @export_group("Materials")
@@ -19,9 +20,14 @@ extends Node3D
 @export var player_path: NodePath
 
 # --- Systems ---
-var noise_builder: NoiseBuilder
-var material_lib: MaterialLibrary
-var veg_spawner: VegetationSpawner
+# REMOVED TYPE HINT: var noise_builder: NoiseBuilder 
+var noise_builder
+# REMOVED TYPE HINT: var material_lib: MaterialLibrary
+var material_lib
+# FIXED: Removed the unrecognized type hint for VegetationSpawner
+var veg_spawner 
+# REMOVED TYPE HINT: var biome_selector: BiomeSelector 
+var biome_selector
 
 var chunks := {}
 var generation_queue := []
@@ -49,6 +55,9 @@ func _process(_delta):
 func _initialize_systems():
 	# Initialize services with configs
 	noise_builder = NoiseBuilder.new(noise_config)
+	
+	# Initialize Biome Selector (Needs noise_builder for its noise sampling)
+	biome_selector = BiomeSelector.new(biome_configs, noise_config.seed, noise_builder) # <<< INIT BiomeSelector
 	
 	var textures = {
 		"splat_map": splat_map, "tex_grass": tex_grass,
@@ -95,6 +104,7 @@ func _process_queue():
 		var chunk = TerrainChunk.new()
 		add_child(chunk)
 		# Dependency Injection: Give the chunk exactly what it needs
-		chunk.setup(c, world_config, noise_builder, material_lib, veg_spawner)
+		# <<< ADDED biome_selector to setup call
+		chunk.setup(c, world_config, noise_builder, material_lib, veg_spawner, biome_selector) 
 		chunks[c] = chunk
 		processed += 1
