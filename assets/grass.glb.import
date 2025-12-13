@@ -3,7 +3,7 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://cotwx32tv2pu1"
+uid="uid://bigo5xq781qyb"
 path="res://.godot/imported/grass.glb-8b0e1dba7fa7ec0ebfa6453fadc4ae22.scn"
 
 [deps]
@@ -39,14 +39,14 @@ materials/extract_format=0
 materials/extract_path=""
 _subresources={
 "meshes": {
-"grass_Cube_001": {
+"grass_Plane_001": {
 "generate/lightmap_uv": 0,
 "generate/lods": 0,
 "generate/shadow_meshes": 0,
 "lods/normal_merge_angle": 20.0,
 "save_to_file/enabled": true,
 "save_to_file/fallback_path": "res://assets/grass.res",
-"save_to_file/path": "uid://cqtr32nau16yf"
+"save_to_file/path": "uid://ykdf6pvqsjlh"
 }
 }
 }

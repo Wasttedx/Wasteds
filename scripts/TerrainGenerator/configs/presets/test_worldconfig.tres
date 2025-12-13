@@ -4,4 +4,5 @@
 
 [resource]
 script = ExtResource("1_nlbwl")
+chunk_resolution = 32
 metadata/_custom_type_script = "uid://cd8qtxmdo3cnl"

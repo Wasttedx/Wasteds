@@ -1,12 +1,13 @@
 extends Node3D
 class_name TerrainChunk
 
-func setup(coords: Vector2i, 
-		   w_conf: WorldConfig, 
-		   noise: NoiseBuilder, 
-		   mat_lib: MaterialLibrary, 
-		   veg: VegetationSpawner,
-		   biome_selector: BiomeSelector): # <<< ADDED BiomeSelector
+func setup(coords: Vector2i,
+	w_conf: WorldConfig,
+	noise: NoiseBuilder,
+	mat_lib: MaterialLibrary,
+	veg: VegetationSpawner,
+	biome_selector: BiomeSelector,
+	splat_gen: SplatMapGenerator): # <<< RECEIVE NEW SERVICE
 	
 	name = "chunk_%d_%d" % [coords.x, coords.y]
 	position = Vector3(coords.x * w_conf.chunk_world_size, 0, coords.y * w_conf.chunk_world_size)
@@ -17,13 +18,17 @@ func setup(coords: Vector2i,
 	var biome_config = biome_selector.get_biome_for_coords(center_x, center_z)
 	
 	# 2. Apply Biome Overrides to services
-	
 	# --- NOISE OVERRIDES ---
 	noise.push_config_override(biome_config)
 	
+	# --- NEW: Generate Splat Map ---
+	# Uses the noise service (which may have been overridden by the biome)
+	var chunk_splat_map = splat_gen.generate_splat_map(coords, biome_config)
+	# -------------------------------
+	
 	# --- MATERIAL OVERRIDES ---
-	# Get the material *before* mesh creation, as it will be used for noise sampling
-	var chunk_material = mat_lib.get_terrain_material(biome_config)
+	# Pass the GENERATED splat map to the material library along with the biome config
+	var chunk_material = mat_lib.get_terrain_material(biome_config, chunk_splat_map) # <<< PASS SPLAT MAP
 	
 	# 3. Build Mesh (Uses the overriden noise settings)
 	var mesh = MeshFactory.build_terrain_mesh(coords, w_conf, noise)
@@ -41,4 +46,4 @@ func setup(coords: Vector2i,
 	add_child(col)
 	
 	# 6. Spawn Vegetation (Passing biome for specific rules)
-	veg.spawn_all(self, coords, mat_lib.vegetation_material, biome_config) # <<< ADDED BiomeConfig
+	veg.spawn_all(self, coords, mat_lib.vegetation_material, biome_config)

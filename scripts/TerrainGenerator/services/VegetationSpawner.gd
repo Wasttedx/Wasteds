@@ -59,7 +59,7 @@ func _spawn_layer(parent: Node, coords: Vector2i, mesh: Mesh, count: int, y_off:
 		var wz = oz + lz
 		
 		# Ensure NoiseBuilder is using the correct (potentially overridden) height function
-		var h = noise.get_height(wx, wz) 
+		var h = noise.get_height(wx, wz)	
 		# Simple slope check. Should use surface normal for better accuracy.
 		var h_next = noise.get_height(wx + 0.5, wz)
 		var slope = abs(h_next - h)

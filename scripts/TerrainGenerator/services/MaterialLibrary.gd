@@ -14,16 +14,20 @@ func _init(shader: Shader, textures: Dictionary):
 	vegetation_material.albedo_color = Color(0.15, 0.6, 0.15)
 	vegetation_material.flags_receive_shadows = true
 
-func get_terrain_material(biome: BiomeConfig) -> ShaderMaterial:
+# UPDATED: Now accepts the per-chunk splat_map
+func get_terrain_material(biome: BiomeConfig, chunk_splat_map: ImageTexture) -> ShaderMaterial: # <<< ADD SPLAT MAP ARG
 	var mat = ShaderMaterial.new()
 	mat.shader = terrain_shader
 	
-	# 1. Apply ALL BASE TEXTURES/PARAMETERS (Crucial for splat_map and default textures)
+	# 1. Apply ALL BASE TEXTURES/PARAMETERS (tex_grass, tex_dirt, etc.)
 	for key in base_textures:
-		# Check if the value is a valid resource before setting
+		# The static splat_map is no longer in base_textures, only the texture maps
 		if base_textures[key] is Texture2D or base_textures[key] is Texture:
 			mat.set_shader_parameter(key, base_textures[key])
-		# Note: In your setup, the splat_map is passed here via the key "splat_map"
+	
+	# --- NEW: Set the dynamically generated Splat Map ---
+	mat.set_shader_parameter("splat_map", chunk_splat_map)
+	# ---------------------------------------------------
 	
 	# 2. Apply BIOME SPECIFIC TEXTURE OVERRIDES
 	for key in biome.texture_overrides:

@@ -5,12 +5,12 @@ extends Node3D
 @export var world_config: WorldConfig
 @export var noise_config: NoiseConfig
 @export var veg_config: VegetationConfig
-@export var biome_configs: Array[BiomeConfig] # <<< ADDED Biome Configs
+@export var biome_configs: Array[BiomeConfig]
 
 # --- Assets ---
 @export_group("Materials")
 @export var terrain_shader: Shader = preload("res://shaders/terrain_shader.gdshader")
-@export var splat_map: Texture2D
+# @export var splat_map: Texture2D # <<< REMOVED: No longer static/exported
 @export var tex_grass: Texture2D
 @export var tex_dirt: Texture2D
 @export var tex_rock: Texture2D
@@ -20,14 +20,11 @@ extends Node3D
 @export var player_path: NodePath
 
 # --- Systems ---
-# REMOVED TYPE HINT: var noise_builder: NoiseBuilder 
 var noise_builder
-# REMOVED TYPE HINT: var material_lib: MaterialLibrary
 var material_lib
-# FIXED: Removed the unrecognized type hint for VegetationSpawner
-var veg_spawner 
-# REMOVED TYPE HINT: var biome_selector: BiomeSelector 
+var veg_spawner
 var biome_selector
+var splat_map_generator # <<< Variable for the SplatMapGenerator service
 
 var chunks := {}
 var generation_queue := []
@@ -51,17 +48,23 @@ func _process(_delta):
 	if not player: return
 	_update_chunks()
 	_process_queue()
+	# The veg_spawner will no longer be updated here; grass is updated per chunk now.
 
 func _initialize_systems():
 	# Initialize services with configs
 	noise_builder = NoiseBuilder.new(noise_config)
 	
-	# Initialize Biome Selector (Needs noise_builder for its noise sampling)
-	biome_selector = BiomeSelector.new(biome_configs, noise_config.seed, noise_builder) # <<< INIT BiomeSelector
+	# Initialize Biome Selector
+	biome_selector = BiomeSelector.new(biome_configs, noise_config.seed, noise_builder)
+	
+	# --- Initialize SplatMap Generator ---
+	splat_map_generator = SplatMapGenerator.new(noise_builder, world_config)
+	# ----------------------------------------
 	
 	var textures = {
-		"splat_map": splat_map, "tex_grass": tex_grass,
-		"tex_dirt": tex_dirt, "tex_rock": tex_rock, "tex_corrupt": tex_corrupt
+		# "splat_map" is removed here
+		"tex_grass": tex_grass, "tex_dirt": tex_dirt,	
+		"tex_rock": tex_rock, "tex_corrupt": tex_corrupt
 	}
 	material_lib = MaterialLibrary.new(terrain_shader, textures)
 	
@@ -103,8 +106,7 @@ func _process_queue():
 		
 		var chunk = TerrainChunk.new()
 		add_child(chunk)
-		# Dependency Injection: Give the chunk exactly what it needs
-		# <<< ADDED biome_selector to setup call
-		chunk.setup(c, world_config, noise_builder, material_lib, veg_spawner, biome_selector) 
+		# Dependency Injection: Pass the new generator service
+		chunk.setup(c, world_config, noise_builder, material_lib, veg_spawner, biome_selector, splat_map_generator) # <<< PASS NEW SERVICE
 		chunks[c] = chunk
 		processed += 1
