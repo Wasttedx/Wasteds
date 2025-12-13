@@ -14,7 +14,7 @@ class_name TerrainGenerator
 @export var tex_grass: TerrainTexture 
 @export var tex_dirt: TerrainTexture 
 @export var tex_rock: TerrainTexture 
-@export var tex_corrupt: TerrainTexture # <<< RESTORED: Needed for the shader's 'A' channel
+@export var tex_corrupt: TerrainTexture 
 
 @export_group("Target")
 @export var player_path: NodePath
@@ -24,11 +24,15 @@ var noise_builder: NoiseBuilder
 var material_lib: MaterialLibrary
 var veg_spawner: VegetationSpawner
 var biome_selector: BiomeSelector
-var splat_map_generator: SplatMapGenerator # Variable for the SplatMapGenerator service
+var splat_map_generator: SplatMapGenerator
 
 var chunks := {}
 var generation_queue := []
 var player: Node3D
+
+# LOD Settings: Chunks within this radius (in chunk units) become High Res (LOD 0)
+# Everything else within view distance becomes Low Res (LOD 1)
+const LOD_HIGH_RES_DISTANCE: int = 1 
 
 func _ready():
 	if player_path: player = get_node_or_null(player_path)
@@ -38,6 +42,7 @@ func _ready():
 	
 	# Initial generation
 	_update_chunks()
+	_update_lods() # Force LOD update immediately
 	
 	# Snap player to ground
 	if player:
@@ -48,6 +53,7 @@ func _ready():
 func _process(_delta):
 	if not player: return
 	_update_chunks()
+	_update_lods() # Check for LOD transitions
 	_process_queue()
 
 func _initialize_systems():
@@ -63,9 +69,9 @@ func _initialize_systems():
 	# 4. Prepare Textures Dictionary (For MaterialLibrary)
 	var textures = {
 		"tex_grass": tex_grass, 
-		"tex_dirt": tex_dirt, 	
+		"tex_dirt": tex_dirt,      
 		"tex_rock": tex_rock, 
-		"tex_corrupt": tex_corrupt # <<< RESTORED: Include the corrupt texture for MaterialLibrary
+		"tex_corrupt": tex_corrupt 
 	}
 	
 	# 5. Initialize Material Library
@@ -105,7 +111,28 @@ func _update_chunks():
 			chunks[c].queue_free()
 			chunks.erase(c)
 
+func _update_lods():
+	var p_pos = player.global_position if player else Vector3.ZERO
+	var p_cx = int(floor(p_pos.x / world_config.chunk_world_size))
+	var p_cz = int(floor(p_pos.z / world_config.chunk_world_size))
+	
+	for c in chunks:
+		var chunk = chunks[c]
+		
+		# Chebyshev distance (Grid distance)
+		var dist_x = abs(c.x - p_cx)
+		var dist_z = abs(c.y - p_cz)
+		var dist = max(dist_x, dist_z)
+		
+		var target_lod = 0
+		if dist > LOD_HIGH_RES_DISTANCE:
+			target_lod = 1
+			
+		# Apply LOD
+		chunk.set_lod(target_lod)
+
 func _process_queue():
+	# Process one chunk per frame to avoid stutters
 	var processed = 0
 	while processed < world_config.max_chunks_per_frame and not generation_queue.is_empty():
 		var c = generation_queue.pop_front()
@@ -115,15 +142,19 @@ func _process_queue():
 		var chunk = TerrainChunk.new()
 		add_child(chunk)
 		
-		# Dependency Injection: Pass all necessary services to the chunk's setup function
+		# Dependency Injection
 		chunk.setup(c, 
 					world_config, 
 					noise_builder, 
 					material_lib, 
 					veg_spawner, 
 					biome_selector, 
-					splat_map_generator # PASS THE SPLAT MAP GENERATOR SERVICE
+					splat_map_generator
 					) 
+		
+		# NOTE: We don't call set_lod here immediately. 
+		# We add it to chunks list, and _update_lods() will catch it on the next pass 
+		# and assign the correct initial LOD.
 		
 		chunks[c] = chunk
 		processed += 1
