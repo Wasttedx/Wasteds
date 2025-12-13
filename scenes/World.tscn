@@ -20,7 +20,7 @@ script = ExtResource("10_c0d7e")
 diffuse = ExtResource("7_b3faq")
 normal = ExtResource("7_7c4bj")
 displacement = ExtResource("8_nrtoj")
-tiling_scale = 1.0
+tiling_scale = 0.4
 metadata/_custom_type_script = "uid://dn37reqcaxptj"
 
 [sub_resource type="Resource" id="Resource_c0d7e"]
@@ -28,7 +28,7 @@ script = ExtResource("10_c0d7e")
 diffuse = ExtResource("8_ygioq")
 roughness = ExtResource("12_i4b1j")
 displacement = ExtResource("11_nrtoj")
-tiling_scale = 1.0
+tiling_scale = 0.4
 metadata/_custom_type_script = "uid://dn37reqcaxptj"
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_kqs1s"]
@@ -45,6 +45,9 @@ background_mode = 2
 sky = SubResource("Sky_32lhk")
 glow_enabled = true
 fog_enabled = true
+adjustment_enabled = true
+adjustment_contrast = 2.0
+adjustment_saturation = 0.5
 
 [node name="Node3D" type="Node3D"]
 
