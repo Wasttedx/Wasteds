@@ -13,7 +13,13 @@ config_version=5
 config/name="Wasteds"
 run/main_scene="uid://bf4gfw1by2ot3"
 config/features=PackedStringArray("4.5", "Forward Plus")
-config/icon="res://icon.svg"
+boot_splash/bg_color=Color(0, 0, 0, 1)
+boot_splash/image="uid://ctqc8jytgiiy7"
+config/icon="uid://ctqc8jytgiiy7"
+
+[debug]
+
+settings/stdout/print_fps=true
 
 [input]
 

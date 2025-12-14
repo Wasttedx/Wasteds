@@ -83,10 +83,6 @@ tex_dirt = SubResource("Resource_dgldv")
 tex_rock = SubResource("Resource_c0d7e")
 player_path = NodePath("../Player")
 
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.8660254, 0.5, 0, -0.5, 0.8660254, 20, 10.372896, 58.93544)
-visible = false
-
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_32lhk")
 
