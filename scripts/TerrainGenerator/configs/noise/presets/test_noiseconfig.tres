@@ -4,5 +4,5 @@
 
 [resource]
 script = ExtResource("1_dwpmr")
-seed = 0
+noise_seed = 0
 metadata/_custom_type_script = "uid://b6xodtqbya7vy"

@@ -28,16 +28,18 @@ func _initialize_noise_objects():
 	_apply_noise_config(config)
 
 # NEW FUNCTION: Applies the current config properties to the FastNoiseLite object
-# This prevents object replacement (which causes the free error)
 func _apply_noise_config(cfg: NoiseConfig):
-	_noise.seed = cfg.seed
+	# FIX 1: Changed cfg.seed to cfg.noise_seed
+	_noise.seed = cfg.noise_seed 
+	
 	_noise.frequency = cfg.frequency
 	_noise.fractal_octaves = cfg.octaves
 	
+	# FIX 2: Changed cfg.seed to cfg.noise_seed
 	# Biome noise also uses the same global seed
-	_biome_noise.seed = cfg.seed
+	_biome_noise.seed = cfg.noise_seed 
 
-# --- Biome Override System ---
+# --- Biome Override System (No changes needed here) ---
 
 # Push a biome config to override the current noise parameters
 func push_config_override(biome_config: BiomeConfig):

@@ -12,7 +12,7 @@ var biome_config: BiomeConfig
 
 # --- Output Data ---
 var mesh_array_high_res: Array # For MeshFactory_HighRes
-var mesh_array_low_res: Array  # For MeshFactory_LowRes
+var mesh_array_low_res: Array # For MeshFactory_LowRes
 var splat_map_texture: ImageTexture
 var collision_shapes: Array # The actual CollisionShape3D data, not the node
 var vegetation_transforms: Array[Transform3D]
@@ -36,6 +36,7 @@ func start_build(coords: Vector2i, wc: WorldConfig, nb: NoiseBuilder, bs: BiomeS
 	
 	is_running = true
 	thread = Thread.new()
+	
 	var err = thread.start(_build_data_threaded)
 	if err != OK:
 		push_error("Failed to start chunk builder thread: ", err)
@@ -67,11 +68,11 @@ func _build_data_threaded():
 	mesh_array_low_res = mesh_data_low.arrays
 	
 	# 5. Generate Splat Map Texture
-	var splat_image: Image = splat_map_generator.generate_splat_image(chunk_coords, world_config, noise_builder, biome_config)
+	var splat_image: Image = SplatMapGenerator.generate_splat_image(chunk_coords, world_config, noise_builder, biome_config)
 	
 	# 6. Generate Vegetation Transforms
 	var veg_config: VegetationConfig = veg_spawner.config 
-	vegetation_transforms = veg_spawner.generate_transforms(chunk_coords, world_config, noise_builder, veg_config, biome_config)
+	vegetation_transforms = VegetationSpawner.generate_transforms(chunk_coords, world_config, noise_builder, veg_config, biome_config)
 	
 	# 7. Pop Biome Overrides
 	noise_builder.pop_config_override()
@@ -80,44 +81,25 @@ func _build_data_threaded():
 	var result_data = {
 		"high_res_mesh_arrays": mesh_array_high_res,
 		"low_res_mesh_arrays": mesh_array_low_res,
-		"splat_map_image": splat_image, # Pass the Image back
+		"splat_map_image": splat_image, 
 		"collision_shapes": collision_shapes,
 		"vegetation_transforms": vegetation_transforms,
 		"biome_config": biome_config
 	}
 	
-	# Signal back to the main thread
-	# Important: Reset is_running BEFORE signaling, as the cleanup could be triggered 
-	# immediately after the signal is received.
+	# Important: Reset is_running BEFORE signaling.
 	is_running = false
+	
+	# Signal back to the main thread
 	emit_signal("build_finished", chunk_coords, result_data)
 
-func _notification(what):
-	# FIX: Remove/Comment out the NOTIFICATION_PREDELETE block.
-	# The thread has finished running by the time the signal is processed.
-	# If the object is still alive when the thread finishes, this notification is 
-	# likely running in the worker thread context, leading to the error.
-	# The thread should only be manually waited for if it's stopped mid-run.
-	# We rely on the thread finishing naturally and 'cleanup()' being called.
-	pass
-	# if what == NOTIFICATION_PREDELETE:
-	# 	# Clean up thread if it's still running
-	# 	if thread and is_running:
-	# 		thread.wait_to_finish()
-	# 		is_running = false
-
-func cleanup():
-	# The thread object is safe to clean up here since _build_data_threaded
-	# already finished and set is_running = false.
-	# We use wait_to_finish ONLY to clean up the thread resource itself, 
-	# but only if it's not the current thread (which it isn't here).
-	if thread and thread.is_started():
-		# It's safer to check if the thread is still active before attempting to wait,
-		# but since 'is_running' is set to false in _build_data_threaded,
-		# we assume the worker thread has finished its work.
-		# The call to wait_to_finish() here is technically correct for resource cleanup,
-		# but since we are relying on the main thread calling this, it's safer
-		# to just let the thread resource clean itself up.
-		# If the error persists, you can simplify this to:
-		thread = null
+func cleanup() -> Thread:
+	# This function is called by the main thread.
+	var thread_to_join = thread
+	
+	# Clear the reference locally
+	thread = null
 	is_running = false
+	
+	# Return the Thread object.
+	return thread_to_join

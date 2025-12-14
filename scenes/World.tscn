@@ -43,7 +43,6 @@ sky_material = SubResource("ProceduralSkyMaterial_kqs1s")
 [sub_resource type="Environment" id="Environment_32lhk"]
 background_mode = 2
 sky = SubResource("Sky_32lhk")
-glow_enabled = true
 fog_enabled = true
 fog_mode = 1
 fog_density = 1.0

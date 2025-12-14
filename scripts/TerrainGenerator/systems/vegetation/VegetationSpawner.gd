@@ -46,7 +46,7 @@ static func generate_transforms(chunk_coords: Vector2i, world_config: WorldConfi
 	return all_transforms
 
 # --- Private Static Helper (Generation) ---
-static func _generate_layer_transforms(coords: Vector2i, world_size: float, noise_builder: NoiseBuilder, count: int, y_off: float, scale_info: Vector2, max_slope: float, biome_config: BiomeConfig) -> Array[Transform3D]:
+static func _generate_layer_transforms(coords: Vector2i, chunk_world_size: float, noise_builder: NoiseBuilder, count: int, y_off: float, scale_info: Vector2, max_slope: float, _biome_config: BiomeConfig) -> Array[Transform3D]:
 	if count <= 0: return []
 	
 	var transforms: Array[Transform3D] = []
@@ -56,12 +56,12 @@ static func _generate_layer_transforms(coords: Vector2i, world_size: float, nois
 	var rng = RandomNumberGenerator.new()
 	rng.seed = chunk_seed
 	
-	var ox = coords.x * world_size
-	var oz = coords.y * world_size
+	var ox = coords.x * chunk_world_size
+	var oz = coords.y * chunk_world_size
 	
 	for i in range(count):
-		var lx = rng.randf_range(0.0, world_size)
-		var lz = rng.randf_range(0.0, world_size)
+		var lx = rng.randf_range(0.0, chunk_world_size)
+		var lz = rng.randf_range(0.0, chunk_world_size)
 		var wx = ox + lx
 		var wz = oz + lz
 		
@@ -110,5 +110,5 @@ func _apply_layer_multimesh(parent: Node3D, transforms: Array[Transform3D], mesh
 
 # --- Obsolete methods kept empty for structure ---
 
-func spawn_all(parent: Node3D, chunk_coords: Vector2i, fallback_mat: StandardMaterial3D, biome_config: BiomeConfig):
+func spawn_all(_parent: Node3D, _chunk_coords: Vector2i, _fallback_mat: StandardMaterial3D, _biome_config: BiomeConfig):
 	pass

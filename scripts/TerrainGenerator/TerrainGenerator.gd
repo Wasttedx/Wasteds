@@ -29,6 +29,7 @@ var splat_map_generator: SplatMapGenerator
 var chunks := {}
 var generation_queue := [] # Chunk coordinates to be generated
 var active_build_threads := {} # Maps chunk_coords to ChunkBuilderThread
+var threads_to_join := [] # Array to hold strong references to Thread objects waiting for deferred cleanup
 var player: Node3D
 
 # LOD Settings: Chunks within this radius (in chunk units) become High Res (LOD 0)
@@ -51,6 +52,11 @@ func _ready():
 		var h = noise_builder.get_height(player.global_position.x, player.global_position.z)
 		player.global_position.y = h + 2.0
 
+# Handles synchronous cleanup when the game/node exits
+func _notification(what):
+	if what == NOTIFICATION_EXIT_TREE:
+		_stop_all_threads()
+
 func _process(_delta):
 	if not player: return
 	_update_chunks()
@@ -62,7 +68,8 @@ func _initialize_systems():
 	noise_builder = NoiseBuilder.new(noise_config)
 	
 	# 2. Initialize Biome Selector
-	biome_selector = BiomeSelector.new(biome_configs, noise_config.seed, noise_builder)
+	# FIX: Changed noise_config.seed to noise_config.noise_seed
+	biome_selector = BiomeSelector.new(biome_configs, noise_config.noise_seed, noise_builder)
 	
 	# 3. Initialize SplatMap Generator
 	splat_map_generator = SplatMapGenerator.new(noise_builder, world_config)
@@ -116,8 +123,17 @@ func _update_chunks():
 	# Cleanup threads for chunks that have moved out of range
 	for c in active_build_threads.keys():
 		if not active_coords.has(c):
-			var thread_worker = active_build_threads.get(c)
+			var builder_thread: ChunkBuilderThread = active_build_threads.get(c)
+
+			# 1. Clean up the worker and get the finished Thread object reference
+			var finished_thread = builder_thread.cleanup()
+
+			# 2. Remove the reference from the map (The thread is now orphaned)
 			active_build_threads.erase(c)
+
+			# 3. MANDATORY: Synchronously join the thread to prevent the C++ warning/leak
+			if is_instance_valid(finished_thread) and finished_thread.is_started():
+				finished_thread.wait_to_finish() # <-- This line is the solution!
 
 
 func _update_lods():
@@ -153,13 +169,13 @@ func _process_queue():
 		
 		# Dependency Injection - pass all systems and configs
 		chunk.setup(c, 
-					world_config, 
-					noise_builder, 
-					material_lib, 
-					veg_spawner, 
-					biome_selector, 
-					splat_map_generator
-					) 
+					 world_config, 
+					 noise_builder, 
+					 material_lib, 
+					 veg_spawner, 
+					 biome_selector, 
+					 splat_map_generator
+					 ) 
 		
 		chunks[c] = chunk
 		
@@ -174,16 +190,53 @@ func _on_chunk_build_finished(coords: Vector2i, build_data: Dictionary):
 	if active_build_threads.has(coords):
 		var builder_thread: ChunkBuilderThread = active_build_threads[coords]
 		
-		# Remove from active list
+		# Remove reference to ChunkBuilderThread from active list
 		active_build_threads.erase(coords)
 		
 		# Apply data to chunk on main thread
 		if chunks.has(coords):
 			var chunk: TerrainChunk = chunks[coords]
-			chunk.apply_prebuilt_data(build_data) # New method in TerrainChunk
+			chunk.apply_prebuilt_data(build_data) 
 			
-			# FIX: Using the StringName syntax for maximum compatibility.
 			call_deferred("_update_lods")
 
-		# Clean up the thread worker object
-		builder_thread.cleanup()
+		# Get the finished thread reference and DEFER the mandatory wait_to_finish() call.
+		var finished_thread = builder_thread.cleanup()
+		
+		# Hold a strong reference in threads_to_join to keep the Thread object 
+		# alive until the deferred call executes, preventing the warning.
+		if finished_thread and finished_thread.is_started():
+			threads_to_join.append(finished_thread) 
+			
+			# Defer the final, mandatory cleanup call.
+			Callable(finished_thread, "wait_to_finish").call_deferred() 
+
+func _stop_all_threads():
+	# 1. Clean up threads that are still actively building
+	# Use .keys().duplicate() to safely iterate while modifying the dictionary
+	for coords in active_build_threads.keys().duplicate(): 
+		if active_build_threads.has(coords):
+			var builder_thread: ChunkBuilderThread = active_build_threads[coords]
+			
+			# Clean up the worker and get the Thread reference
+			var finished_thread = builder_thread.cleanup()
+			# Remove worker from map
+			active_build_threads.erase(coords) 
+			
+			# Check for validity and if the Thread is still active before joining
+			if is_instance_valid(finished_thread) and finished_thread.is_started():
+				# Mandatory synchronous join on exit to prevent thread object warning
+				finished_thread.wait_to_finish()
+	
+	# 2. Clean up threads that were waiting in the deferred queue (threads_to_join)
+	var current_threads_to_join = threads_to_join.duplicate()
+	threads_to_join.clear() # Clear the main array immediately
+	
+	for thread in current_threads_to_join:
+		# Check for validity and if the Thread is still active before joining
+		if is_instance_valid(thread) and thread.is_started():
+			# Mandatory synchronous join on exit
+			thread.wait_to_finish()
+			
+	# The combination of deferred joins and this synchronous exit cleanup 
+	# should eliminate all thread destruction warnings.

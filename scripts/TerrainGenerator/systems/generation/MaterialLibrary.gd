@@ -12,7 +12,6 @@ func _init(shader: Shader, textures: Dictionary):
 	# Generic Vegetation Material (Fallback)
 	vegetation_material = StandardMaterial3D.new()
 	vegetation_material.albedo_color = Color(0.15, 0.6, 0.15)
-	vegetation_material.flags_receive_shadows = true
 
 # Private helper method to set all shader parameters for a single texture layer
 # We pass the ShaderMaterial 'mat' as an argument, and call this using 'self._set_texture_layer'
