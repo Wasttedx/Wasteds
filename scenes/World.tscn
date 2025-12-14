@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3 uid="uid://bf4gfw1by2ot3"]
+[gd_scene load_steps=27 format=3 uid="uid://bf4gfw1by2ot3"]
 
 [ext_resource type="Script" uid="uid://bbgoastxikr1f" path="res://scripts/TerrainGenerator/TerrainGenerator.gd" id="1_32lhk"]
 [ext_resource type="Resource" uid="uid://dalj3jo0tnmfd" path="res://scripts/TerrainGenerator/configs/world/presets/test_worldconfig.tres" id="2_1lgw5"]
@@ -7,28 +7,45 @@
 [ext_resource type="PackedScene" uid="uid://b5v42w3nm4eox" path="res://scenes/player.tscn" id="5_1lgw5"]
 [ext_resource type="Script" uid="uid://s5qsie30t0f6" path="res://scripts/TerrainGenerator/configs/biome/BiomeConfig.gd" id="5_b3faq"]
 [ext_resource type="Resource" uid="uid://ddtqns1mvuqkg" path="res://scripts/TerrainGenerator/configs/biome/presets/test_biomeconfig.tres" id="6_ygioq"]
-[ext_resource type="Texture2D" uid="uid://cwh816giomw8v" path="res://textures/Grass_rock/rocky_terrain_02_spec_1k.png" id="7_7c4bj"]
-[ext_resource type="Texture2D" uid="uid://dffinhn2bmjbq" path="res://textures/Grass_rock/rocky_terrain_02_diff_1k.jpg" id="7_b3faq"]
-[ext_resource type="Texture2D" uid="uid://dxnlh2mhgugft" path="res://textures/Grass_rock/rocky_terrain_02_disp_1k.png" id="8_nrtoj"]
-[ext_resource type="Texture2D" uid="uid://x4ti7l10wigk" path="res://textures/Rocky/forest_ground_04_diff_1k.jpg" id="8_ygioq"]
+[ext_resource type="Texture2D" uid="uid://bh1misqtiy0a5" path="res://textures/Grass/rocky_terrain_02_diff_1k.png" id="7_44lqw"]
+[ext_resource type="Texture2D" uid="uid://pqtplgwecf52" path="res://textures/Grass/rocky_terrain_02_disp_1k.png" id="8_dwmkc"]
+[ext_resource type="Texture2D" uid="uid://bn5rd7ngff24s" path="res://textures/Grass/rocky_terrain_02_nor_gl_1k.png" id="9_30fn3"]
 [ext_resource type="Script" uid="uid://dn37reqcaxptj" path="res://scripts/TerrainGenerator/configs/TerrainTexture.gd" id="10_c0d7e"]
-[ext_resource type="Texture2D" uid="uid://cli0l5ur0y8f" path="res://textures/Rocky/forest_ground_04_disp_1k.png" id="11_nrtoj"]
-[ext_resource type="Texture2D" uid="uid://cidhx5rgmxx66" path="res://textures/Rocky/forest_ground_04_rough_1k.exr" id="12_i4b1j"]
+[ext_resource type="Texture2D" uid="uid://je6mca6klx2l" path="res://textures/Grass/rocky_terrain_02_rough_1k.png" id="10_dgldv"]
+[ext_resource type="Texture2D" uid="uid://bpdo1om1tw71q" path="res://textures/Dirt/dirt_floor_diff_1k.png" id="11_nthub"]
+[ext_resource type="Texture2D" uid="uid://bacadqlmqacqe" path="res://textures/Dirt/dirt_floor_disp_1k.png" id="12_44lqw"]
+[ext_resource type="Texture2D" uid="uid://c8y386j2u5geo" path="res://textures/Dirt/dirt_floor_nor_gl_1k.png" id="13_dwmkc"]
+[ext_resource type="Texture2D" uid="uid://jadm0sstpcmu" path="res://textures/Dirt/dirt_floor_rough_1k.png" id="14_30fn3"]
+[ext_resource type="Texture2D" uid="uid://vp5tb144fwhk" path="res://textures/Rock/aerial_rocks_02_diff_1k.png" id="16_dwmkc"]
+[ext_resource type="Texture2D" uid="uid://rv3i56snjvk2" path="res://textures/Rock/aerial_rocks_02_disp_1k.png" id="17_30fn3"]
+[ext_resource type="Texture2D" uid="uid://dpnypq2summqu" path="res://textures/Rock/aerial_rocks_02_nor_gl_1k.png" id="18_dgldv"]
+[ext_resource type="Texture2D" uid="uid://ojw404dsap2r" path="res://textures/Rock/aerial_rocks_02_rough_1k.png" id="19_rm3lh"]
 
 [sub_resource type="Resource" id="Resource_o1tcx"]
 script = ExtResource("10_c0d7e")
-diffuse = ExtResource("7_b3faq")
-normal = ExtResource("7_7c4bj")
-displacement = ExtResource("8_nrtoj")
-tiling_scale = 0.4
+diffuse = ExtResource("7_44lqw")
+normal = ExtResource("9_30fn3")
+roughness = ExtResource("10_dgldv")
+displacement = ExtResource("8_dwmkc")
+tiling_scale = 1.0
+metadata/_custom_type_script = "uid://dn37reqcaxptj"
+
+[sub_resource type="Resource" id="Resource_dgldv"]
+script = ExtResource("10_c0d7e")
+diffuse = ExtResource("11_nthub")
+normal = ExtResource("13_dwmkc")
+roughness = ExtResource("14_30fn3")
+displacement = ExtResource("12_44lqw")
+tiling_scale = 1.0
 metadata/_custom_type_script = "uid://dn37reqcaxptj"
 
 [sub_resource type="Resource" id="Resource_c0d7e"]
 script = ExtResource("10_c0d7e")
-diffuse = ExtResource("8_ygioq")
-roughness = ExtResource("12_i4b1j")
-displacement = ExtResource("11_nrtoj")
-tiling_scale = 0.4
+diffuse = ExtResource("16_dwmkc")
+normal = ExtResource("18_dgldv")
+roughness = ExtResource("19_rm3lh")
+displacement = ExtResource("17_30fn3")
+tiling_scale = 1.0
 metadata/_custom_type_script = "uid://dn37reqcaxptj"
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_kqs1s"]
@@ -61,6 +78,7 @@ noise_config = ExtResource("3_hlk0d")
 veg_config = ExtResource("4_0uv0p")
 biome_configs = Array[ExtResource("5_b3faq")]([ExtResource("6_ygioq")])
 tex_grass = SubResource("Resource_o1tcx")
+tex_dirt = SubResource("Resource_dgldv")
 tex_rock = SubResource("Resource_c0d7e")
 player_path = NodePath("../Player")
 

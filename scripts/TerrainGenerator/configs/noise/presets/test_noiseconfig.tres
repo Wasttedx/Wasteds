@@ -4,5 +4,11 @@
 
 [resource]
 script = ExtResource("1_dwpmr")
-noise_seed = 0
+noise_seed = 84291
+frequency = 0.004
+octaves = 5
+lacunarity = 2.1
+persistence = 0.45
+height_multiplier = 35.0
+noise_offset = Vector2(1000, 1000)
 metadata/_custom_type_script = "uid://b6xodtqbya7vy"
