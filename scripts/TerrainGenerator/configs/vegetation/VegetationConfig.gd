@@ -10,7 +10,7 @@ class_name VegetationConfig
 @export var rock_count: int = 30
 
 @export_group("Scaling")
-@export var grass_scale: Vector2 = Vector2(1.0, 0.4) # x=base, y=variance
+@export var grass_scale: Vector2 = Vector2(1.0, 0.4)
 @export var tree_scale: Vector2 = Vector2(1.0, 0.4)
 @export var rock_scale: Vector2 = Vector2(1.0, 0.4)
 

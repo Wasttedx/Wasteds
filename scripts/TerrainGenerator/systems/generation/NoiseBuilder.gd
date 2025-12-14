@@ -2,87 +2,67 @@ class_name NoiseBuilder
 
 var config: NoiseConfig
 var _noise: FastNoiseLite
-var _biome_noise: FastNoiseLite # Dedicated noise for biome selection/blending
-var _config_stack: Array[NoiseConfig] = [] # Stack for biome overrides
+var _biome_noise: FastNoiseLite
+var _config_stack: Array[NoiseConfig] = []
 
 func _init(cfg: NoiseConfig):
 	config = cfg
-	_initialize_noise_objects() # Separate initialization from application
+	_initialize_noise_objects()
 
 func _initialize_noise_objects():
-	# Only call this once to create the objects
 	_noise = FastNoiseLite.new()
 	_biome_noise = FastNoiseLite.new()
 	
-	# Set up properties that NEVER change
 	_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
 	_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
 	_noise.fractal_lacunarity = config.lacunarity
 	_noise.fractal_gain = config.persistence
 	
-	_biome_noise.frequency = 0.0005 # Very low frequency for large biomes
+	_biome_noise.frequency = 0.0005
 	_biome_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
 	_biome_noise.fractal_type = FastNoiseLite.FRACTAL_NONE
 
-	# Apply the initial config properties
 	_apply_noise_config(config)
 
-# NEW FUNCTION: Applies the current config properties to the FastNoiseLite object
 func _apply_noise_config(cfg: NoiseConfig):
-	# FIX 1: Changed cfg.seed to cfg.noise_seed
 	_noise.seed = cfg.noise_seed 
 	
 	_noise.frequency = cfg.frequency
 	_noise.fractal_octaves = cfg.octaves
 	
-	# FIX 2: Changed cfg.seed to cfg.noise_seed
-	# Biome noise also uses the same global seed
 	_biome_noise.seed = cfg.noise_seed 
 
-# --- Biome Override System (No changes needed here) ---
-
-# Push a biome config to override the current noise parameters
 func push_config_override(biome_config: BiomeConfig):
-	_config_stack.append(config) # Save current active config
-	var new_config = config.duplicate() # Create a temporary new config
+	_config_stack.append(config)
+	var new_config = config.duplicate()
 	
-	# Apply overrides if values are not default (0.0)
 	if biome_config.noise_frequency_override > 0.0:
 		new_config.frequency = biome_config.noise_frequency_override
 	if biome_config.noise_height_multiplier_override > 0.0:
 		new_config.height_multiplier = biome_config.noise_height_multiplier_override
 	
-	config = new_config # Set the temporary config as the active one
-	_apply_noise_config(config) # Apply new properties to the existing object (FIX)
+	config = new_config
+	_apply_noise_config(config)
 
-# Restore the previous active config
 func pop_config_override():
 	if _config_stack.is_empty(): return
 	config = _config_stack.pop_back()
-	_apply_noise_config(config) # Apply previous properties to the existing object (FIX)
-
-# --- Height Generation (Now uses active config, potentially overriden) ---
+	_apply_noise_config(config)
 
 func get_height(world_x: float, world_z: float) -> float:
 	var nx = world_x + config.noise_offset.x
 	var nz = world_z + config.noise_offset.y
 	
-	# This call is now safe because _noise object itself was never freed.
 	var n1 = _noise.get_noise_2d(nx, nz) * 0.5 + 0.5 
 	var n2 = _noise.get_noise_2d(nx * 2.0, nz * 2.0) * 0.5 + 0.5
 	
 	return (n1 * 0.7 + n2 * 0.3 - 0.5) * config.height_multiplier
 
-# --- Biome-Specific Noise ---
-
-# Get a very low-frequency noise value (0.0 to 1.0) for biome selection/blending
 func get_biome_noise(world_x: float, world_z: float) -> float:
 	var nx = world_x + config.noise_offset.x
 	var nz = world_z + config.noise_offset.y
 	
-	# Remap from [-1, 1] to [0, 1]
 	return _biome_noise.get_noise_2d(nx, nz) * 0.5 + 0.5
 
-# Placeholder function, would normally sum probabilities from an array of biomes
 func get_total_biome_weight() -> float:
-	return 1.0 # Assuming all biomes in the BiomeSelector sum up to 1.0 for now
+	return 1.0

@@ -10,15 +10,11 @@ func _init(cfg: VegetationConfig, ns: NoiseBuilder, chunk_size: float):
 	world_size = chunk_size
 
 
-# ==============================================================================
-# THREAD-SAFE GENERATION METHOD (Called by ChunkBuilderThread)
-# ==============================================================================
 static func generate_transforms(chunk_coords: Vector2i, world_config: WorldConfig, noise_builder: NoiseBuilder, veg_config: VegetationConfig, biome_config: BiomeConfig) -> Array[Transform3D]:
 	
 	var all_transforms: Array[Transform3D] = []
 	var chunk_world_size = world_config.chunk_world_size
 
-	# --- 1. Determine counts and scales (using biome overrides) ---
 	var grass_count = biome_config.vegetation_overrides.get("grass_count", veg_config.grass_count)
 	var tree_count = biome_config.vegetation_overrides.get("tree_count", veg_config.tree_count)
 	var rock_count = biome_config.vegetation_overrides.get("rock_count", veg_config.rock_count)
@@ -28,8 +24,6 @@ static func generate_transforms(chunk_coords: Vector2i, world_config: WorldConfi
 	var rock_scale = biome_config.vegetation_overrides.get("rock_scale", veg_config.rock_scale)
 	
 	var max_slope = veg_config.max_slope 
-	
-	# --- 2. Generate transforms for each layer ---
 	
 	all_transforms.append_array(
 		_generate_layer_transforms(chunk_coords, chunk_world_size, noise_builder, grass_count, 0.1, grass_scale, max_slope, biome_config)
@@ -45,7 +39,6 @@ static func generate_transforms(chunk_coords: Vector2i, world_config: WorldConfi
 	
 	return all_transforms
 
-# --- Private Static Helper (Generation) ---
 static func _generate_layer_transforms(coords: Vector2i, chunk_world_size: float, noise_builder: NoiseBuilder, count: int, y_off: float, scale_info: Vector2, max_slope: float, _biome_config: BiomeConfig) -> Array[Transform3D]:
 	if count <= 0: return []
 	
@@ -81,12 +74,8 @@ static func _generate_layer_transforms(coords: Vector2i, chunk_world_size: float
 	return transforms
 
 
-# ==============================================================================
-# MAIN-THREAD NODE APPLICATION METHOD
-# ==============================================================================
 func apply_transforms(parent: Node3D, transforms: Array[Transform3D], material: Material):
 	
-	# For simplicity, we use the default grass mesh and spawn all transforms into one MultiMesh.
 	if config.grass_mesh:
 		_apply_layer_multimesh(parent, transforms, config.grass_mesh, material)
 
@@ -107,8 +96,6 @@ func _apply_layer_multimesh(parent: Node3D, transforms: Array[Transform3D], mesh
 	if mat: inst.material_override = mat
 	
 	parent.add_child(inst)
-
-# --- Obsolete methods kept empty for structure ---
 
 func spawn_all(_parent: Node3D, _chunk_coords: Vector2i, _fallback_mat: StandardMaterial3D, _biome_config: BiomeConfig):
 	pass

@@ -59,6 +59,7 @@ sky_material = SubResource("ProceduralSkyMaterial_kqs1s")
 
 [sub_resource type="Environment" id="Environment_32lhk"]
 background_mode = 2
+background_energy_multiplier = 1.2
 sky = SubResource("Sky_32lhk")
 fog_enabled = true
 fog_mode = 1
@@ -91,6 +92,7 @@ environment = SubResource("Environment_32lhk")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.70710677, 0.24184473, -0.6644629, 0, 0.93969256, 0.3420201, 0.70710677, -0.24184473, 0.6644629, 0, 9.069779, 4.8188477)
+visible = false
 shadow_enabled = true
 
 [node name="Player" parent="." instance=ExtResource("5_1lgw5")]

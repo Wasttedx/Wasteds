@@ -1,7 +1,6 @@
 extends RefCounted
 class_name ChunkBuilderThread
 
-# --- Dependencies (Must be thread-safe or passed by value) ---
 var chunk_coords: Vector2i
 var world_config: WorldConfig
 var noise_builder: NoiseBuilder
@@ -10,17 +9,14 @@ var splat_map_generator: SplatMapGenerator
 var veg_spawner: VegetationSpawner
 var biome_config: BiomeConfig
 
-# --- Output Data ---
-var mesh_array_high_res: Array # For MeshFactory_HighRes
-var mesh_array_low_res: Array # For MeshFactory_LowRes
+var mesh_array_high_res: Array
+var mesh_array_low_res: Array
 var splat_map_texture: ImageTexture
-var collision_shapes: Array # The actual CollisionShape3D data, not the node
+var collision_shapes: Array
 var vegetation_transforms: Array[Transform3D]
 
-# Used to signal completion back to the main thread
 signal build_finished(chunk_coords, build_data)
 
-# --- Internal Thread Control ---
 var thread: Thread
 var is_running: bool = false
 
@@ -28,7 +24,6 @@ func start_build(coords: Vector2i, wc: WorldConfig, nb: NoiseBuilder, bs: BiomeS
 	chunk_coords = coords
 	world_config = wc
 	
-	# Pass systems as they are, but ONLY use their thread-safe methods (like noise)
 	noise_builder = nb
 	biome_selector = bs
 	splat_map_generator = smg
@@ -43,41 +38,31 @@ func start_build(coords: Vector2i, wc: WorldConfig, nb: NoiseBuilder, bs: BiomeS
 		is_running = false
 
 func _build_data_threaded():
-	# This function runs in the separate thread
 	
-	# 1. Identify Biome
 	var center_x = (chunk_coords.x * world_config.chunk_world_size) + (world_config.chunk_world_size * 0.5)
 	var center_z = (chunk_coords.y * world_config.chunk_world_size) + (world_config.chunk_world_size * 0.5)
 	biome_config = biome_selector.get_biome_for_coords(center_x, center_z)
 
-	# 2. Push Biome Overrides (for noise generation)
 	noise_builder.push_config_override(biome_config)
 
-	# 3. Generate High Res Mesh and Collision Data
 	var mesh_factory_high_res = load("res://scripts/TerrainGenerator/systems/generation/MeshFactory_HighRes.gd").new()
 	var mesh_data_high = mesh_factory_high_res.build_terrain_mesh_data(chunk_coords, world_config, noise_builder)
 	mesh_array_high_res = mesh_data_high.arrays
 	
-	# Build Collision
 	var collision_builder = load("res://scripts/TerrainGenerator/systems/physics/CollisionBuilder.gd").new()
 	collision_shapes = collision_builder.create_collision_data(mesh_data_high)
 	
-	# 4. Generate Low Res Mesh
 	var mesh_factory_low_res = load("res://scripts/TerrainGenerator/systems/generation/MeshFactory_LowRes.gd").new()
 	var mesh_data_low = mesh_factory_low_res.build_terrain_mesh_data(chunk_coords, world_config, noise_builder)
 	mesh_array_low_res = mesh_data_low.arrays
 	
-	# 5. Generate Splat Map Texture
 	var splat_image: Image = SplatMapGenerator.generate_splat_image(chunk_coords, world_config, noise_builder, biome_config)
 	
-	# 6. Generate Vegetation Transforms
 	var veg_config: VegetationConfig = veg_spawner.config 
 	vegetation_transforms = VegetationSpawner.generate_transforms(chunk_coords, world_config, noise_builder, veg_config, biome_config)
 	
-	# 7. Pop Biome Overrides
 	noise_builder.pop_config_override()
 
-	# 8. Prepare result dictionary
 	var result_data = {
 		"high_res_mesh_arrays": mesh_array_high_res,
 		"low_res_mesh_arrays": mesh_array_low_res,
@@ -87,19 +72,14 @@ func _build_data_threaded():
 		"biome_config": biome_config
 	}
 	
-	# Important: Reset is_running BEFORE signaling.
 	is_running = false
 	
-	# Signal back to the main thread
 	emit_signal("build_finished", chunk_coords, result_data)
 
 func cleanup() -> Thread:
-	# This function is called by the main thread.
 	var thread_to_join = thread
 	
-	# Clear the reference locally
 	thread = null
 	is_running = false
 	
-	# Return the Thread object.
 	return thread_to_join
