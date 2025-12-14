@@ -27,7 +27,8 @@ var biome_selector: BiomeSelector
 var splat_map_generator: SplatMapGenerator
 
 var chunks := {}
-var generation_queue := []
+var generation_queue := [] # Chunk coordinates to be generated
+var active_build_threads := {} # Maps chunk_coords to ChunkBuilderThread
 var player: Node3D
 
 # LOD Settings: Chunks within this radius (in chunk units) become High Res (LOD 0)
@@ -69,7 +70,7 @@ func _initialize_systems():
 	# 4. Prepare Textures Dictionary (For MaterialLibrary)
 	var textures = {
 		"tex_grass": tex_grass, 
-		"tex_dirt": tex_dirt,      
+		"tex_dirt": tex_dirt, 
 		"tex_rock": tex_rock, 
 		"tex_corrupt": tex_corrupt 
 	}
@@ -102,7 +103,8 @@ func _update_chunks():
 			var c = Vector2i(p_cx + x, p_cz + z)
 			active_coords[c] = true
 			
-			if not chunks.has(c) and not generation_queue.has(c):
+			# Check if chunk exists, is being built, or is queued
+			if not chunks.has(c) and not active_build_threads.has(c) and not generation_queue.has(c):
 				generation_queue.append(c)
 	
 	# Cleanup old chunks
@@ -110,6 +112,13 @@ func _update_chunks():
 		if not active_coords.has(c):
 			chunks[c].queue_free()
 			chunks.erase(c)
+	
+	# Cleanup threads for chunks that have moved out of range
+	for c in active_build_threads.keys():
+		if not active_coords.has(c):
+			var thread_worker = active_build_threads.get(c)
+			active_build_threads.erase(c)
+
 
 func _update_lods():
 	var p_pos = player.global_position if player else Vector3.ZERO
@@ -128,21 +137,21 @@ func _update_lods():
 		if dist > LOD_HIGH_RES_DISTANCE:
 			target_lod = 1
 			
-		# Apply LOD
+		# Apply LOD - This is a call on the main thread
 		chunk.set_lod(target_lod)
 
 func _process_queue():
-	# Process one chunk per frame to avoid stutters
-	var processed = 0
-	while processed < world_config.max_chunks_per_frame and not generation_queue.is_empty():
+	# Start new build jobs up to the max parallel threads (e.g., 8-16, or just one per frame)
+	
+	# Check if we can start a new job
+	if active_build_threads.size() < world_config.max_chunks_per_frame and not generation_queue.is_empty():
 		var c = generation_queue.pop_front()
-		if chunks.has(c): continue
 		
-		# Create the chunk instance
+		# Create the chunk instance immediately to have a container
 		var chunk = TerrainChunk.new()
 		add_child(chunk)
 		
-		# Dependency Injection
+		# Dependency Injection - pass all systems and configs
 		chunk.setup(c, 
 					world_config, 
 					noise_builder, 
@@ -152,9 +161,29 @@ func _process_queue():
 					splat_map_generator
 					) 
 		
-		# NOTE: We don't call set_lod here immediately. 
-		# We add it to chunks list, and _update_lods() will catch it on the next pass 
-		# and assign the correct initial LOD.
-		
 		chunks[c] = chunk
-		processed += 1
+		
+		# Start the thread job
+		var builder_thread = ChunkBuilderThread.new()
+		builder_thread.connect("build_finished", _on_chunk_build_finished)
+		builder_thread.start_build(c, world_config, noise_builder, biome_selector, splat_map_generator, veg_spawner)
+		active_build_threads[c] = builder_thread
+		
+func _on_chunk_build_finished(coords: Vector2i, build_data: Dictionary):
+	# This function is called on the main thread when the worker finishes
+	if active_build_threads.has(coords):
+		var builder_thread: ChunkBuilderThread = active_build_threads[coords]
+		
+		# Remove from active list
+		active_build_threads.erase(coords)
+		
+		# Apply data to chunk on main thread
+		if chunks.has(coords):
+			var chunk: TerrainChunk = chunks[coords]
+			chunk.apply_prebuilt_data(build_data) # New method in TerrainChunk
+			
+			# FIX: Using the StringName syntax for maximum compatibility.
+			call_deferred("_update_lods")
+
+		# Clean up the thread worker object
+		builder_thread.cleanup()

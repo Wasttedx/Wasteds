@@ -1,7 +1,20 @@
 class_name MeshFactory_HighRes
 
 # Static helper to generate a high-detail terrain mesh with smooth normals
+# NOTE: This method is NOT thread-safe due to ArrayMesh/SurfaceTool usage.
+# Use build_terrain_mesh_data for multithreading.
 static func build_terrain_mesh(coords: Vector2i, world_cfg: WorldConfig, noise: NoiseBuilder) -> ArrayMesh:
+	var mesh_data = build_terrain_mesh_data(coords, world_cfg, noise)
+	var mesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, mesh_data.arrays)
+	return mesh
+
+# Static helper to generate mesh arrays for thread-safe transfer.
+# Returns a Dictionary with the ArrayMesh data arrays.
+static func build_terrain_mesh_data(coords: Vector2i, world_cfg: WorldConfig, noise: NoiseBuilder) -> Dictionary:
+	
+	# We use SurfaceTool in the thread ONLY to aggregate the arrays easily,
+	# but we MUST call commit() on the main thread.
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
@@ -63,7 +76,11 @@ static func build_terrain_mesh(coords: Vector2i, world_cfg: WorldConfig, noise: 
 			st.set_uv(uv3); st.set_normal(n3); st.add_vertex(p3)
 
 	st.generate_tangents()
-	return st.commit()
+	# st.commit() returns an ArrayMesh, which is not thread-safe.
+	# We use commit_to_arrays() to get the raw data arrays.
+	var mesh_arrays = st.commit_to_arrays()
+	
+	return {"arrays": mesh_arrays}
 
 # Calculates a smooth normal vector by sampling the continuous noise function.
 static func _calculate_normal(wx: float, wz: float, step: float, noise: NoiseBuilder) -> Vector3:

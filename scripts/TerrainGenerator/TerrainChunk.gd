@@ -5,6 +5,7 @@ class_name TerrainChunk
 var chunk_coords: Vector2i
 var current_lod: int = -1 # -1 implies not initialized
 var is_ready: bool = false
+var is_built: bool = false # New state: true once build_data is applied
 
 # --- Dependencies ---
 var world_config: WorldConfig
@@ -13,6 +14,9 @@ var material_lib: MaterialLibrary
 var veg_spawner: VegetationSpawner
 var biome_selector: BiomeSelector
 var splat_map_generator: SplatMapGenerator
+
+# --- Prebuilt Data (Set by Thread) ---
+var build_data: Dictionary = {}
 
 # --- Scene Components ---
 var mesh_instance: MeshInstance3D
@@ -41,67 +45,74 @@ func setup(coords: Vector2i, wc: WorldConfig, nb: NoiseBuilder, ml: MaterialLibr
 	
 	is_ready = true
 
+func apply_prebuilt_data(data: Dictionary):
+	# Called on the main thread when ChunkBuilderThread.gd finishes its job
+	if is_built:
+		# Should not happen, but a safeguard
+		return
+		
+	build_data = data
+	is_built = true
+	# LOD will be set by TerrainGenerator._update_lods() on the next frame
+
 # Sets the Level of Detail. 0 = High, >0 = Low
 func set_lod(level: int):
-	if not is_ready: return
+	if not is_ready or not is_built: return # Wait for prebuilt data
 	if current_lod == level: return # No change needed
 	
 	current_lod = level
 	
-	# 1. Clean up existing geometry/physics to prevent overlap or memory leaks
+	# 1. Clean up existing geometry/physics
 	if mesh_instance.mesh:
 		mesh_instance.mesh = null
 	_clear_physics()
 	_clear_vegetation()
 	
-	# 2. Identify Biome
-	# We use the center of the chunk to determine the dominant biome for the shader
-	var center_x = (chunk_coords.x * world_config.chunk_world_size) + (world_config.chunk_world_size * 0.5)
-	var center_z = (chunk_coords.y * world_config.chunk_world_size) + (world_config.chunk_world_size * 0.5)
-	var biome = biome_selector.get_biome_for_coords(center_x, center_z)
+	# 2. Get Biome config from prebuilt data
+	var biome: BiomeConfig = build_data.biome_config
 	
-	# 3. Push Biome Overrides (for noise generation)
-	noise.push_config_override(biome)
+	# 3. Create Splat Map Texture (From Image created on the thread)
+	var splat_image: Image = build_data.splat_map_image
+	var splat_tex = ImageTexture.create_from_image(splat_image)
 	
-	# 4. Generate Mesh based on LOD
-	if current_lod == 0:
-		_build_high_res(biome)
-	else:
-		_build_low_res(biome)
-		
-	# 5. Pop Biome Overrides
-	noise.pop_config_override()
-
-func _build_high_res(biome: BiomeConfig):
-	# A. Geometry
-	var mesh = MeshFactory_HighRes.build_terrain_mesh(chunk_coords, world_config, noise)
-	mesh_instance.mesh = mesh
-	
-	# B. Splat Map & Material
-	var splat_tex = splat_map_generator.generate_splat_map(chunk_coords, biome)
+	# 4. Get Material
 	var mat = material_lib.get_terrain_material(biome, splat_tex)
-	mesh_instance.material_override = mat
 	
-	# C. Physics (Collision) - Only for High Res
-	collision_body = CollisionBuilder.create_collision(mesh)
+	# 5. Apply Mesh, Physics, Vegetation based on LOD
+	if current_lod == 0:
+		_apply_high_res(mat)
+	else:
+		_apply_low_res(mat)
+
+func _apply_high_res(material: Material):
+	# A. Geometry
+	var mesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, build_data.high_res_mesh_arrays)
+	mesh_instance.mesh = mesh
+	mesh_instance.material_override = material
+	
+	# B. Physics (Collision)
+	collision_body = StaticBody3D.new()
 	add_child(collision_body)
 	
-	# D. Vegetation - Only for High Res
+	var collision_shapes: Array = build_data.collision_shapes
+	for shape_data in collision_shapes:
+		var shape_node = CollisionShape3D.new()
+		shape_node.shape = shape_data.shape
+		shape_node.transform = shape_data.transform
+		collision_body.add_child(shape_node)
+
+	# C. Vegetation
 	vegetation_root = Node3D.new()
 	add_child(vegetation_root)
-	veg_spawner.spawn_all(vegetation_root, chunk_coords, material_lib.vegetation_material, biome)
+	veg_spawner.apply_transforms(vegetation_root, build_data.vegetation_transforms, material_lib.vegetation_material)
 
-func _build_low_res(biome: BiomeConfig):
+func _apply_low_res(material: Material):
 	# A. Geometry (Fast, Low Poly)
-	var mesh = MeshFactory_LowRes.build_terrain_mesh(chunk_coords, world_config, noise)
+	var mesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, build_data.low_res_mesh_arrays)
 	mesh_instance.mesh = mesh
-	
-	# B. Splat Map & Material
-	# For optimization, LowRes could use a cached or lower-res splat map, 
-	# but for now, we generate it to ensure colors match.
-	var splat_tex = splat_map_generator.generate_splat_map(chunk_coords, biome)
-	var mat = material_lib.get_terrain_material(biome, splat_tex)
-	mesh_instance.material_override = mat
+	mesh_instance.material_override = material
 	
 	# Note: No Physics or Vegetation on Low Res chunks to save performance
 

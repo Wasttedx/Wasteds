@@ -19,8 +19,12 @@ func _init(noise_service: NoiseBuilder, w_config: WorldConfig):
 	noise_builder = noise_service
 	world_config = w_config
 
-# Generates and returns a new ImageTexture (Splat Map) for a single chunk
-func generate_splat_map(coords: Vector2i, biome_config: BiomeConfig) -> ImageTexture:
+# ==============================================================================
+# THREAD-SAFE GENERATION METHOD (Called by ChunkBuilderThread)
+# This method generates and returns a raw Image object.
+# ==============================================================================
+static func generate_splat_image(coords: Vector2i, world_config: WorldConfig, noise_builder: NoiseBuilder, biome_config: BiomeConfig) -> Image:
+	
 	var res = world_config.chunk_resolution
 	var size = world_config.chunk_world_size
 	var step = size / float(res - 1)
@@ -30,6 +34,7 @@ func generate_splat_map(coords: Vector2i, biome_config: BiomeConfig) -> ImageTex
 	
 	# 1. Initialize Image
 	var img = Image.create(res, res, false, Image.FORMAT_RGBA8)
+	# Removed img.lock() for Godot 4 compatibility
 	
 	# 2. Loop through every "pixel" (which corresponds to a vertex)
 	for z in range(res):
@@ -43,8 +48,7 @@ func generate_splat_map(coords: Vector2i, biome_config: BiomeConfig) -> ImageTex
 			var height = noise_builder.get_height(wx, wz)
 			var normalized_height = clamp(height / MAX_HEIGHT, 0.0, 1.0)
 			
-			# Calculate slope using the robust Central Difference Method (fixes the '+' seam)
-			# --- FIX: Pass noise_builder to the static function ---
+			# Calculate slope using the robust Central Difference Method
 			var slope = _calculate_slope_robust(wx, wz, step, noise_builder)
 			
 			# 3. Determine Texture Weights using a dedicated function
@@ -55,7 +59,20 @@ func generate_splat_map(coords: Vector2i, biome_config: BiomeConfig) -> ImageTex
 			
 			img.set_pixel(x, z, splat_color)
 
-	# 5. Create Texture and Return
+	# Removed img.unlock() for Godot 4 compatibility
+	return img
+
+
+# ==============================================================================
+# MAIN-THREAD METHOD (Kept for compatibility)
+# This method is NOT thread-safe due to ImageTexture creation.
+# ==============================================================================
+# Generates and returns a new ImageTexture (Splat Map) for a single chunk
+func generate_splat_map(coords: Vector2i, biome_config: BiomeConfig) -> ImageTexture:
+	# Use the thread-safe static function to generate the raw data
+	var img = generate_splat_image(coords, world_config, noise_builder, biome_config)
+	
+	# 5. Create Texture and Return (MUST run on main thread)
 	var tex = ImageTexture.create_from_image(img)
 	return tex
 
@@ -63,7 +80,6 @@ func generate_splat_map(coords: Vector2i, biome_config: BiomeConfig) -> ImageTex
 # --- Private Helper Functions for Readability and Reusability ---
 
 # Calculates the slope using a central difference method for accuracy across chunk boundaries.
-# --- FIX: Added noise_builder as an argument ---
 static func _calculate_slope_robust(wx: float, wz: float, step: float, noise_builder: NoiseBuilder) -> float:
 	
 	# Dx: Change in height along X-axis (sampling 2*step apart)
@@ -89,8 +105,6 @@ class TextureWeights:
 	var corrupt: float = 0.0
 
 # Calculates the texture weights based on height and slope using smooth blending functions.
-# NOTE: This function does not need noise_builder, but we include it in the signature 
-# for consistency if you decide to change the weighting logic later.
 static func _calculate_weights(normalized_height: float, slope: float) -> TextureWeights:
 	var weights = TextureWeights.new()
 	
@@ -99,7 +113,9 @@ static func _calculate_weights(normalized_height: float, slope: float) -> Textur
 	var slope_rock_w = clamp( (slope - ROCK_SLOPE_START) / (ROCK_SLOPE_END - ROCK_SLOPE_START), 0.0, 1.0)
 	
 	# Contribution from high altitude
-	var height_rock_w = clamp( (normalized_height - ROCK_HEIGHT_START) / (ROCK_HEIGHT_END - ROCK_HEIGHT_END), 0.0, 1.0)
+	var height_diff = ROCK_HEIGHT_END - ROCK_HEIGHT_START
+	if height_diff == 0.0: height_diff = 0.001 # Prevent division by zero
+	var height_rock_w = clamp( (normalized_height - ROCK_HEIGHT_START) / height_diff, 0.0, 1.0)
 	
 	weights.rock = max(slope_rock_w, height_rock_w)
 	

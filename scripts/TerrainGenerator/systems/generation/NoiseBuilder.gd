@@ -7,23 +7,35 @@ var _config_stack: Array[NoiseConfig] = [] # Stack for biome overrides
 
 func _init(cfg: NoiseConfig):
 	config = cfg
-	_setup_noise()
+	_initialize_noise_objects() # Separate initialization from application
 
-func _setup_noise():
+func _initialize_noise_objects():
+	# Only call this once to create the objects
 	_noise = FastNoiseLite.new()
-	_noise.seed = config.seed
-	_noise.frequency = config.frequency
+	_biome_noise = FastNoiseLite.new()
+	
+	# Set up properties that NEVER change
 	_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
 	_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	_noise.fractal_octaves = config.octaves
 	_noise.fractal_lacunarity = config.lacunarity
 	_noise.fractal_gain = config.persistence
 	
-	_biome_noise = FastNoiseLite.new()
-	_biome_noise.seed = config.seed
 	_biome_noise.frequency = 0.0005 # Very low frequency for large biomes
 	_biome_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
 	_biome_noise.fractal_type = FastNoiseLite.FRACTAL_NONE
+
+	# Apply the initial config properties
+	_apply_noise_config(config)
+
+# NEW FUNCTION: Applies the current config properties to the FastNoiseLite object
+# This prevents object replacement (which causes the free error)
+func _apply_noise_config(cfg: NoiseConfig):
+	_noise.seed = cfg.seed
+	_noise.frequency = cfg.frequency
+	_noise.fractal_octaves = cfg.octaves
+	
+	# Biome noise also uses the same global seed
+	_biome_noise.seed = cfg.seed
 
 # --- Biome Override System ---
 
@@ -39,13 +51,13 @@ func push_config_override(biome_config: BiomeConfig):
 		new_config.height_multiplier = biome_config.noise_height_multiplier_override
 	
 	config = new_config # Set the temporary config as the active one
-	_setup_noise() # Re-initialize the noise generator with the new parameters
+	_apply_noise_config(config) # Apply new properties to the existing object (FIX)
 
 # Restore the previous active config
 func pop_config_override():
 	if _config_stack.is_empty(): return
 	config = _config_stack.pop_back()
-	_setup_noise() # Re-initialize the noise generator
+	_apply_noise_config(config) # Apply previous properties to the existing object (FIX)
 
 # --- Height Generation (Now uses active config, potentially overriden) ---
 
@@ -53,7 +65,8 @@ func get_height(world_x: float, world_z: float) -> float:
 	var nx = world_x + config.noise_offset.x
 	var nz = world_z + config.noise_offset.y
 	
-	var n1 = _noise.get_noise_2d(nx, nz) * 0.5 + 0.5
+	# This call is now safe because _noise object itself was never freed.
+	var n1 = _noise.get_noise_2d(nx, nz) * 0.5 + 0.5 
 	var n2 = _noise.get_noise_2d(nx * 2.0, nz * 2.0) * 0.5 + 0.5
 	
 	return (n1 * 0.7 + n2 * 0.3 - 0.5) * config.height_multiplier

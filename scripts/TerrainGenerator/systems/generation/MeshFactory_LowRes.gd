@@ -1,7 +1,17 @@
 class_name MeshFactory_LowRes
 
 # Static helper to generate a low-detail terrain mesh for distant chunks
+# NOTE: This method is NOT thread-safe due to ArrayMesh/SurfaceTool usage.
+# Use build_terrain_mesh_data for multithreading.
 static func build_terrain_mesh(coords: Vector2i, world_cfg: WorldConfig, noise: NoiseBuilder) -> ArrayMesh:
+	var mesh_data = build_terrain_mesh_data(coords, world_cfg, noise)
+	var mesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, mesh_data.arrays)
+	return mesh
+
+# Static helper to generate mesh arrays for thread-safe transfer.
+# Returns a Dictionary with the ArrayMesh data arrays.
+static func build_terrain_mesh_data(coords: Vector2i, world_cfg: WorldConfig, noise: NoiseBuilder) -> Dictionary:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
@@ -50,6 +60,8 @@ static func build_terrain_mesh(coords: Vector2i, world_cfg: WorldConfig, noise: 
 
 	# Use automatic normal generation for performance (less accurate but faster)
 	st.generate_normals()
-	# Optional: Skip tangents for distant chunks to save memory/time
+	# Note: We skip tangents for distant chunks to save memory/time
 	
-	return st.commit()
+	var mesh_arrays = st.commit_to_arrays()
+	
+	return {"arrays": mesh_arrays}
