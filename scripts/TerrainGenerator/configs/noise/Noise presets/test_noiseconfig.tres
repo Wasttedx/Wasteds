@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="NoiseConfig" load_steps=2 format=3 uid="uid://06ok8j1dhx2u"]
+
+[ext_resource type="Script" uid="uid://b6xodtqbya7vy" path="res://scripts/TerrainGenerator/configs/noise/NoiseConfig.gd" id="1_v4hq0"]
+
+[resource]
+script = ExtResource("1_v4hq0")
+metadata/_custom_type_script = "uid://b6xodtqbya7vy"

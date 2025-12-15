@@ -1,8 +1,9 @@
-[gd_scene load_steps=27 format=3 uid="uid://bf4gfw1by2ot3"]
+[gd_scene load_steps=28 format=3 uid="uid://bf4gfw1by2ot3"]
 
 [ext_resource type="Script" uid="uid://bbgoastxikr1f" path="res://scripts/TerrainGenerator/TerrainGenerator.gd" id="1_32lhk"]
+[ext_resource type="Resource" uid="uid://06ok8j1dhx2u" path="res://scripts/TerrainGenerator/configs/noise/Noise presets/test_noiseconfig.tres" id="2_0uv0p"]
 [ext_resource type="Resource" uid="uid://dalj3jo0tnmfd" path="res://scripts/TerrainGenerator/configs/world/presets/test_worldconfig.tres" id="2_1lgw5"]
-[ext_resource type="Resource" uid="uid://06ok8j1dhx2u" path="res://scripts/TerrainGenerator/configs/noise/presets/test_noiseconfig.tres" id="3_hlk0d"]
+[ext_resource type="Resource" uid="uid://c7l6nlwvg756p" path="res://scripts/TerrainGenerator/configs/noise/Height presets/test_heightpipelineconfig.tres" id="3_b3faq"]
 [ext_resource type="Resource" uid="uid://uglmb1knhxhw" path="res://scripts/TerrainGenerator/configs/vegetation/presets/test_vegetationconfig.tres" id="4_0uv0p"]
 [ext_resource type="PackedScene" uid="uid://b5v42w3nm4eox" path="res://scenes/player.tscn" id="5_1lgw5"]
 [ext_resource type="Script" uid="uid://s5qsie30t0f6" path="res://scripts/TerrainGenerator/configs/biome/BiomeConfig.gd" id="5_b3faq"]
@@ -21,31 +22,31 @@
 [ext_resource type="Texture2D" uid="uid://dpnypq2summqu" path="res://textures/Rock/aerial_rocks_02_nor_gl_1k.png" id="18_dgldv"]
 [ext_resource type="Texture2D" uid="uid://ojw404dsap2r" path="res://textures/Rock/aerial_rocks_02_rough_1k.png" id="19_rm3lh"]
 
-[sub_resource type="Resource" id="Resource_o1tcx"]
+[sub_resource type="Resource" id="Resource_nrtoj"]
 script = ExtResource("10_c0d7e")
 diffuse = ExtResource("7_44lqw")
 normal = ExtResource("9_30fn3")
 roughness = ExtResource("10_dgldv")
 displacement = ExtResource("8_dwmkc")
-tiling_scale = 1.0
+tiling_scale = 0.2
 metadata/_custom_type_script = "uid://dn37reqcaxptj"
 
-[sub_resource type="Resource" id="Resource_dgldv"]
+[sub_resource type="Resource" id="Resource_rpuxp"]
 script = ExtResource("10_c0d7e")
 diffuse = ExtResource("11_nthub")
 normal = ExtResource("13_dwmkc")
 roughness = ExtResource("14_30fn3")
 displacement = ExtResource("12_44lqw")
-tiling_scale = 1.0
+tiling_scale = 0.2
 metadata/_custom_type_script = "uid://dn37reqcaxptj"
 
-[sub_resource type="Resource" id="Resource_c0d7e"]
+[sub_resource type="Resource" id="Resource_30fn3"]
 script = ExtResource("10_c0d7e")
 diffuse = ExtResource("16_dwmkc")
 normal = ExtResource("18_dgldv")
 roughness = ExtResource("19_rm3lh")
 displacement = ExtResource("17_30fn3")
-tiling_scale = 1.0
+tiling_scale = 0.2
 metadata/_custom_type_script = "uid://dn37reqcaxptj"
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_kqs1s"]
@@ -61,7 +62,6 @@ sky_material = SubResource("ProceduralSkyMaterial_kqs1s")
 background_mode = 2
 background_energy_multiplier = 1.2
 sky = SubResource("Sky_32lhk")
-fog_enabled = true
 fog_mode = 1
 fog_density = 1.0
 fog_depth_begin = 0.0
@@ -75,12 +75,13 @@ adjustment_saturation = 0.5
 [node name="TerrainGenerator" type="Node3D" parent="."]
 script = ExtResource("1_32lhk")
 world_config = ExtResource("2_1lgw5")
-noise_config = ExtResource("3_hlk0d")
+noise_config = ExtResource("2_0uv0p")
+height_pipeline = ExtResource("3_b3faq")
 veg_config = ExtResource("4_0uv0p")
 biome_configs = Array[ExtResource("5_b3faq")]([ExtResource("6_ygioq")])
-tex_grass = SubResource("Resource_o1tcx")
-tex_dirt = SubResource("Resource_dgldv")
-tex_rock = SubResource("Resource_c0d7e")
+tex_grass = SubResource("Resource_nrtoj")
+tex_dirt = SubResource("Resource_rpuxp")
+tex_rock = SubResource("Resource_30fn3")
 player_path = NodePath("../Player")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
@@ -88,7 +89,5 @@ environment = SubResource("Environment_32lhk")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.70710677, 0.24184473, -0.6644629, 0, 0.93969256, 0.3420201, 0.70710677, -0.24184473, 0.6644629, 0, 9.069779, 4.8188477)
-visible = false
-shadow_enabled = true
 
 [node name="Player" parent="." instance=ExtResource("5_1lgw5")]

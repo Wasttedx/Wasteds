@@ -1,12 +1,15 @@
 class_name NoiseBuilder
 
 var config: NoiseConfig
+var height_pipeline: HeightPipelineConfig
+
 var _noise: FastNoiseLite
 var _biome_noise: FastNoiseLite
 var _config_stack: Array[NoiseConfig] = []
 
-func _init(cfg: NoiseConfig):
+func _init(cfg: NoiseConfig, pipeline_cfg: HeightPipelineConfig = null):
 	config = cfg
+	height_pipeline = pipeline_cfg
 	_initialize_noise_objects()
 
 func _initialize_noise_objects():
@@ -23,14 +26,36 @@ func _initialize_noise_objects():
 	_biome_noise.fractal_type = FastNoiseLite.FRACTAL_NONE
 
 	_apply_noise_config(config)
+	
+	if height_pipeline:
+		_initialize_pipeline_seeds()
+
+func _initialize_pipeline_seeds():
+	if height_pipeline.layers.is_empty():
+		return
+
+	var layer_idx = 0
+	for layer in height_pipeline.layers:
+		if layer.noise == null:
+			layer.noise = FastNoiseLite.new()
+			layer.noise.noise_type = FastNoiseLite.TYPE_PERLIN
+			layer.noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+		
+		if layer.use_global_seed:
+			layer.noise.seed = config.noise_seed + (layer_idx * 1327)    
+		
+		layer_idx += 1
 
 func _apply_noise_config(cfg: NoiseConfig):
-	_noise.seed = cfg.noise_seed 
+	_noise.seed = cfg.noise_seed    
 	
 	_noise.frequency = cfg.frequency
 	_noise.fractal_octaves = cfg.octaves
 	
-	_biome_noise.seed = cfg.noise_seed 
+	_biome_noise.seed = cfg.noise_seed    
+	
+	if height_pipeline:
+		_initialize_pipeline_seeds()
 
 func push_config_override(biome_config: BiomeConfig):
 	_config_stack.append(config)
@@ -50,13 +75,41 @@ func pop_config_override():
 	_apply_noise_config(config)
 
 func get_height(world_x: float, world_z: float) -> float:
+	if height_pipeline and not height_pipeline.layers.is_empty():
+		return _get_pipeline_height(world_x, world_z)
+	
 	var nx = world_x + config.noise_offset.x
 	var nz = world_z + config.noise_offset.y
 	
-	var n1 = _noise.get_noise_2d(nx, nz) * 0.5 + 0.5 
+	var n1 = _noise.get_noise_2d(nx, nz) * 0.5 + 0.5    
 	var n2 = _noise.get_noise_2d(nx * 2.0, nz * 2.0) * 0.5 + 0.5
 	
 	return (n1 * 0.7 + n2 * 0.3 - 0.5) * config.height_multiplier
+
+func _get_pipeline_height(x: float, z: float) -> float:
+	var total_height: float = 0.0
+	
+	for layer in height_pipeline.layers:
+		if not layer.enabled:
+			continue
+			
+		var layer_val = layer.get_height(x, z)
+		
+		match layer.blend_mode:
+			BaseNoiseLayer.BlendMode.ADD:
+				total_height += layer_val
+			BaseNoiseLayer.BlendMode.SUBTRACT:
+				total_height -= layer_val
+			BaseNoiseLayer.BlendMode.MULTIPLY:
+				total_height *= layer_val
+			BaseNoiseLayer.BlendMode.MIN:
+				total_height = min(total_height, layer_val)
+			BaseNoiseLayer.BlendMode.MAX:
+				total_height = max(total_height, layer_val)
+			BaseNoiseLayer.BlendMode.REPLACE:
+				total_height = layer_val
+				
+	return total_height * config.height_multiplier
 
 func get_biome_noise(world_x: float, world_z: float) -> float:
 	var nx = world_x + config.noise_offset.x
