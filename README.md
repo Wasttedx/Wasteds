@@ -5,7 +5,6 @@
 ![Engine](https://img.shields.io/badge/Engine-Godot_4-478CBF?style=for-the-badge&logo=godot-engine)
 ![Genre](https://img.shields.io/badge/Genre-Survival_RPG-ff4655?style=for-the-badge)
 ![Art](https://img.shields.io/badge/Art-Low--Poly_Realistic-8a7aff?style=for-the-badge)
-![OpenSource](https://img.shields.io/badge/Open_Source-Yes-2ea44f?style=for-the-badge)
 
 <p align="center">
   <img src="" width="80%" alt="Wasteds banner (coming soon)"/>
