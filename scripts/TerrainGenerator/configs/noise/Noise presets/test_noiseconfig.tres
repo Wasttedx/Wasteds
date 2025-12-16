@@ -4,4 +4,5 @@
 
 [resource]
 script = ExtResource("1_v4hq0")
+noise_seed = 84289
 metadata/_custom_type_script = "uid://b6xodtqbya7vy"

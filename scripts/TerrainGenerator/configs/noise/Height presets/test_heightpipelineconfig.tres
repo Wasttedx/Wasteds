@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="HeightPipelineConfig" load_steps=8 format=3 uid="uid://c7l6nlwvg756p"]
+[gd_resource type="Resource" script_class="HeightPipelineConfig" load_steps=13 format=3 uid="uid://c7l6nlwvg756p"]
 
 [ext_resource type="Script" uid="uid://1jn4otk2yc1" path="res://scripts/TerrainGenerator/systems/generation/height/BaseNoiseLayer.gd" id="1_yy8iw"]
 [ext_resource type="Script" uid="uid://4nfd4hhlu7hu" path="res://scripts/TerrainGenerator/configs/noise/HeightPipelineConfig.gd" id="2_cgr7k"]
@@ -14,19 +14,50 @@ metadata/_custom_type_script = "uid://c37580m8v8m0s"
 noise_type = 2
 seed = 5
 frequency = 0.0064
-fractal_octaves = 2
-fractal_gain = 0.2
+fractal_lacunarity = -3.0
+fractal_gain = -0.1
 cellular_distance_function = 1
 cellular_jitter = 0.815
 cellular_return_type = 4
 
 [sub_resource type="Resource" id="Resource_kf6pj"]
 script = ExtResource("3_o2kpo")
-weight = 0.9
+sharpness = 1.5
+weight = 1.3
 noise = SubResource("FastNoiseLite_o2kpo")
 metadata/_custom_type_script = "uid://dwtr1bsivgwyi"
 
+[sub_resource type="Resource" id="Resource_o2kpo"]
+script = ExtResource("3_o2kpo")
+weight = 0.01
+noise = SubResource("FastNoiseLite_o2kpo")
+metadata/_custom_type_script = "uid://dwtr1bsivgwyi"
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_kf6pj"]
+noise_type = 2
+frequency = 0.0065
+cellular_distance_function = 1
+cellular_return_type = 6
+
+[sub_resource type="Resource" id="Resource_p2pim"]
+script = ExtResource("2_o2kpo")
+blend_mode = 4
+weight = 0.5
+noise = SubResource("FastNoiseLite_kf6pj")
+metadata/_custom_type_script = "uid://c37580m8v8m0s"
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_5vise"]
+frequency = 0.0001
+fractal_octaves = 1
+
+[sub_resource type="Resource" id="Resource_iubb4"]
+script = ExtResource("2_o2kpo")
+blend_mode = 1
+weight = 2.0
+noise = SubResource("FastNoiseLite_5vise")
+metadata/_custom_type_script = "uid://c37580m8v8m0s"
+
 [resource]
 script = ExtResource("2_cgr7k")
-layers = Array[ExtResource("1_yy8iw")]([SubResource("Resource_5vise"), SubResource("Resource_kf6pj")])
+layers = Array[ExtResource("1_yy8iw")]([SubResource("Resource_5vise"), SubResource("Resource_kf6pj"), SubResource("Resource_o2kpo"), SubResource("Resource_p2pim"), SubResource("Resource_iubb4")])
 metadata/_custom_type_script = "uid://4nfd4hhlu7hu"

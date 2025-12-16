@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3 uid="uid://bf4gfw1by2ot3"]
+[gd_scene load_steps=29 format=3 uid="uid://bf4gfw1by2ot3"]
 
 [ext_resource type="Script" uid="uid://bbgoastxikr1f" path="res://scripts/TerrainGenerator/TerrainGenerator.gd" id="1_32lhk"]
 [ext_resource type="Resource" uid="uid://06ok8j1dhx2u" path="res://scripts/TerrainGenerator/configs/noise/Noise presets/test_noiseconfig.tres" id="2_0uv0p"]
@@ -21,6 +21,7 @@
 [ext_resource type="Texture2D" uid="uid://rv3i56snjvk2" path="res://textures/Rock/aerial_rocks_02_disp_1k.png" id="17_30fn3"]
 [ext_resource type="Texture2D" uid="uid://dpnypq2summqu" path="res://textures/Rock/aerial_rocks_02_nor_gl_1k.png" id="18_dgldv"]
 [ext_resource type="Texture2D" uid="uid://ojw404dsap2r" path="res://textures/Rock/aerial_rocks_02_rough_1k.png" id="19_rm3lh"]
+[ext_resource type="Texture2D" uid="uid://cytbwmt743qog" path="res://textures/sky.hdr" id="21_dgldv"]
 
 [sub_resource type="Resource" id="Resource_nrtoj"]
 script = ExtResource("10_c0d7e")
@@ -49,25 +50,19 @@ displacement = ExtResource("17_30fn3")
 tiling_scale = 0.2
 metadata/_custom_type_script = "uid://dn37reqcaxptj"
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_kqs1s"]
-sky_top_color = Color(0.5882565, 0.9393711, 0.9997851, 1)
-sky_horizon_color = Color(0.77744365, 0.84242314, 0.8815111, 1)
-ground_bottom_color = Color(0.3515629, 0.3515629, 0.35156286, 1)
-ground_horizon_color = Color(0.6542198, 0.742696, 0.8146699, 1)
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_rm3lh"]
+panorama = ExtResource("21_dgldv")
 
-[sub_resource type="Sky" id="Sky_32lhk"]
-sky_material = SubResource("ProceduralSkyMaterial_kqs1s")
+[sub_resource type="Sky" id="Sky_yncth"]
+sky_material = SubResource("PanoramaSkyMaterial_rm3lh")
 
 [sub_resource type="Environment" id="Environment_32lhk"]
 background_mode = 2
-background_energy_multiplier = 1.2
-sky = SubResource("Sky_32lhk")
+sky = SubResource("Sky_yncth")
 fog_mode = 1
 fog_density = 1.0
 fog_depth_begin = 0.0
 fog_depth_end = 40.0
-adjustment_enabled = true
-adjustment_contrast = 2.0
 adjustment_saturation = 0.5
 
 [node name="Node3D" type="Node3D"]
@@ -89,5 +84,6 @@ environment = SubResource("Environment_32lhk")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.70710677, 0.24184473, -0.6644629, 0, 0.93969256, 0.3420201, 0.70710677, -0.24184473, 0.6644629, 0, 9.069779, 4.8188477)
+shadow_enabled = true
 
 [node name="Player" parent="." instance=ExtResource("5_1lgw5")]

@@ -49,7 +49,7 @@ static func generate_transforms(chunk_coords: Vector2i, world_config: WorldConfi
 	
 	return vegetation_data
 
-static func _generate_layer_transforms(coords: Vector2i, chunk_world_size: float, noise_builder: NoiseBuilder, count: int, y_off: float, scale_info: Vector2, max_slope: float, _biome_config: BiomeConfig) -> Array[Transform3D]:
+static func _generate_layer_transforms(coords: Vector2i, chunk_world_size: float, noise_builder: NoiseBuilder, count: int, _y_off: float, scale_info: Vector2, max_slope: float, _biome_config: BiomeConfig) -> Array[Transform3D]:
 	if count <= 0: return []
 	
 	var transforms: Array[Transform3D] = []
