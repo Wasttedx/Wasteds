@@ -108,6 +108,7 @@ func _update_chunks():
 	var range_c = world_config.view_distance_chunks
 	var active_coords = {}
 	
+	# 1. Identify active chunks and queue missing ones
 	for z in range(-range_c, range_c + 1):
 		for x in range(-range_c, range_c + 1):
 			var c = Vector2i(p_cx + x, p_cz + z)
@@ -116,7 +117,8 @@ func _update_chunks():
 			if not chunks.has(c) and not active_build_threads.has(c) and not generation_queue.has(c):
 				generation_queue.append(c)
 	
-	for c in chunks.keys():
+	# 2. Unload finished chunks
+	for c in chunks.keys().duplicate(): # Duplicate keys for safe iteration
 		if not active_coords.has(c):
 			# New: Ensure vegetation is removed when chunk is freed
 			if vegetation_manager:
@@ -124,6 +126,23 @@ func _update_chunks():
 			
 			chunks[c].queue_free()
 			chunks.erase(c)
+	
+	# 3. Stop and clean up threads for unloaded chunks
+	for c in active_build_threads.keys().duplicate(): # Duplicate keys for safe iteration
+		if not active_coords.has(c):
+			var builder_thread: ChunkBuilderThread = active_build_threads.get(c)
+			
+			# FIX: Check if the thread object is still valid before calling cleanup()
+			if is_instance_valid(builder_thread):
+				var finished_thread = builder_thread.cleanup()
+			
+				active_build_threads.erase(c)
+
+				if is_instance_valid(finished_thread) and finished_thread.is_started():
+					finished_thread.wait_to_finish()
+			else:
+				# Defensive: If the thread is null/invalid, just erase the key.
+				active_build_threads.erase(c)
 	
 	for c in active_build_threads.keys():
 		if not active_coords.has(c):
