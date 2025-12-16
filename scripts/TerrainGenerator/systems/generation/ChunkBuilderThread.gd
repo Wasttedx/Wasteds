@@ -13,7 +13,7 @@ var mesh_array_high_res: Array
 var mesh_array_low_res: Array
 var splat_map_texture: ImageTexture
 var collision_shapes: Array
-var vegetation_transforms: Array[Transform3D]
+var vegetation_transforms: Dictionary # CHANGED: Type must be Dictionary now (Mesh -> Array[Transform3D])
 
 signal build_finished(chunk_coords, build_data)
 
@@ -58,7 +58,8 @@ func _build_data_threaded():
 	
 	var splat_image: Image = SplatMapGenerator.generate_splat_image(chunk_coords, world_config, noise_builder, biome_config)
 	
-	var veg_config: VegetationConfig = veg_spawner.config 
+	var veg_config: VegetationConfig = veg_spawner.config
+	# The value returned is a Dictionary: { Mesh: Array[Transform3D] }
 	vegetation_transforms = VegetationSpawner.generate_transforms(chunk_coords, world_config, noise_builder, veg_config, biome_config)
 	
 	noise_builder.pop_config_override()
@@ -66,9 +67,9 @@ func _build_data_threaded():
 	var result_data = {
 		"high_res_mesh_arrays": mesh_array_high_res,
 		"low_res_mesh_arrays": mesh_array_low_res,
-		"splat_map_image": splat_image, 
+		"splat_map_image": splat_image,
 		"collision_shapes": collision_shapes,
-		"vegetation_transforms": vegetation_transforms,
+		"vegetation_transforms": vegetation_transforms, # This is now the Dictionary
 		"biome_config": biome_config
 	}
 	

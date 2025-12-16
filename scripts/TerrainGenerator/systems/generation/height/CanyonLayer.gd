@@ -26,4 +26,5 @@ func get_height(x: float, z: float) -> float:
 
 	canyon_value = pow(canyon_value, power_exponent)
 	
+	# Return the layer's influence (scaled by its weight)
 	return canyon_value * weight

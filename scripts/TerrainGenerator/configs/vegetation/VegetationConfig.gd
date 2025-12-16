@@ -15,6 +15,8 @@ class_name VegetationConfig
 @export var rock_scale: Vector2 = Vector2(1.0, 0.4)
 
 @export_group("Meshes")
-@export var grass_mesh: Mesh
-@export var tree_mesh: Mesh
-@export var rock_mesh: Mesh
+# IMPORTANT: Preload the meshes from your Models/vegetation directory
+# Assuming these are actual Mesh resources (like ArrayMesh or PrimitiveMesh)
+@export var grass_mesh: Mesh = preload("res://Models/vegetation/grass.res")
+@export var tree_mesh: Mesh = preload("res://Models/vegetation/tree.res")
+@export var rock_mesh: Mesh = preload("res://Models/vegetation/rock.res")

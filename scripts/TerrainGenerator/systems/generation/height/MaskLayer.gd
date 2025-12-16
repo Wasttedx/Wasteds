@@ -8,10 +8,11 @@ class_name MaskLayer
 func _init():
 	layer_name = "Mask Layer"
 	blend_mode = BlendMode.MULTIPLY
+	# Assume default weight is 1.0 if not specified
 
 func get_height(x: float, z: float) -> float:
 	if not enabled or not noise:
-		return 1.0
+		return 1.0 # Must return 1.0 for MULTIPLY mode to be a no-op
 
 	var sample_x = (x + noise_offset.x) * noise_scale.x
 	var sample_z = (z + noise_offset.y) * noise_scale.y
@@ -22,4 +23,7 @@ func get_height(x: float, z: float) -> float:
 	
 	var mask_val = smoothstep(threshold - feather, threshold + feather, value)
 	
+	# weight controls the strength of the mask. lerp(1.0, mask_val, weight) means:
+	# weight = 0.0 -> returns 1.0 (no effect)
+	# weight = 1.0 -> returns mask_val (full effect)
 	return lerp(1.0, mask_val, weight)

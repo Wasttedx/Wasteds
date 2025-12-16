@@ -23,6 +23,7 @@ var material_lib: MaterialLibrary
 var veg_spawner: VegetationSpawner
 var biome_selector: BiomeSelector
 var splat_map_generator: SplatMapGenerator
+var vegetation_manager: VegetationManager # New: Reference to the manager
 
 var chunks := {}
 var generation_queue := []
@@ -39,7 +40,7 @@ func _ready():
 	if player_path: player = get_node_or_null(player_path)
 	
 	_initialize_systems()
-	_create_defaults_if_missing()
+	# Removed: _create_defaults_if_missing() is no longer needed for grass mesh
 	
 	if player:
 		var spawn_pos = player.global_position
@@ -75,6 +76,7 @@ func _start_full_world_loading():
 
 
 func _initialize_systems():
+	# Initialize Systems
 	noise_builder = NoiseBuilder.new(noise_config, height_pipeline)
 	
 	biome_selector = BiomeSelector.new(biome_configs, noise_config.noise_seed, noise_builder)
@@ -91,11 +93,12 @@ func _initialize_systems():
 	material_lib = MaterialLibrary.new(terrain_shader, textures)
 	
 	veg_spawner = VegetationSpawner.new(veg_config, noise_builder, world_config.chunk_world_size)
+	
+	# New: Initialize and add VegetationManager
+	vegetation_manager = VegetationManager.new()
+	add_child(vegetation_manager)
 
-func _create_defaults_if_missing():
-	if not veg_config.grass_mesh:
-		var p = QuadMesh.new(); p.size = Vector2(0.4, 0.8); p.center_offset = Vector3(0, 0.4, 0)
-		veg_config.grass_mesh = p
+# Removed: func _create_defaults_if_missing():
 
 func _update_chunks():
 	var p_pos = player.global_position if player else Vector3.ZERO
@@ -115,6 +118,10 @@ func _update_chunks():
 	
 	for c in chunks.keys():
 		if not active_coords.has(c):
+			# New: Ensure vegetation is removed when chunk is freed
+			if vegetation_manager:
+				vegetation_manager.remove_chunk_vegetation(c)
+			
 			chunks[c].queue_free()
 			chunks.erase(c)
 	
@@ -162,7 +169,8 @@ func _process_queue():
 					material_lib,
 					veg_spawner,
 					biome_selector,
-					splat_map_generator
+					splat_map_generator,
+					vegetation_manager # New: Pass the vegetation manager
 					)
 		
 		chunks[c] = chunk

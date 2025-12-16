@@ -8,6 +8,7 @@ class_name RidgeLayer
 func _init():
 	layer_name = "Ridge Layer"
 	blend_mode = BlendMode.ADD
+	# Assume default weight is 1.0 if not specified
 
 func get_height(x: float, z: float) -> float:
 	if not enabled or not noise:
@@ -23,4 +24,5 @@ func get_height(x: float, z: float) -> float:
 	if sharpness != 1.0:
 		ridge = pow(ridge, sharpness)
 	
+	# Return the layer's influence (scaled by its weight and offset)
 	return (ridge + offset_y) * weight
