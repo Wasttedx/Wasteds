@@ -7,7 +7,7 @@
 ![Art](https://img.shields.io/badge/Art-Low--Poly_Realistic-8a7aff?style=for-the-badge)
 
 <p align="center">
-  <img src="" width="80%" alt="Wasteds banner (coming soon)"/>
+  <img src="Wasted.png" width="80%" alt="Wasteds banner (coming soon)"/>
 </p>
 
 ---
