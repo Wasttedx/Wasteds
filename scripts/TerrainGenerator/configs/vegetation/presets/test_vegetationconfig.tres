@@ -9,4 +9,5 @@
 script = ExtResource("1_3kn6b")
 grass_scale = Vector2(0.1, 0.2)
 tree_scale = Vector2(0.2, 0.3)
+rock_scale = Vector2(0.3, 0.4)
 metadata/_custom_type_script = "uid://ccij35yi61h1j"

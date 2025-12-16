@@ -1,31 +1,28 @@
-[gd_resource type="Resource" script_class="HeightPipelineConfig" load_steps=9 format=3 uid="uid://c7l6nlwvg756p"]
+[gd_resource type="Resource" script_class="HeightPipelineConfig" load_steps=8 format=3 uid="uid://c7l6nlwvg756p"]
 
 [ext_resource type="Script" uid="uid://1jn4otk2yc1" path="res://scripts/TerrainGenerator/systems/generation/height/BaseNoiseLayer.gd" id="1_yy8iw"]
 [ext_resource type="Script" uid="uid://4nfd4hhlu7hu" path="res://scripts/TerrainGenerator/configs/noise/HeightPipelineConfig.gd" id="2_cgr7k"]
 [ext_resource type="Script" uid="uid://c37580m8v8m0s" path="res://scripts/TerrainGenerator/systems/generation/height/CanyonLayer.gd" id="2_o2kpo"]
 [ext_resource type="Script" uid="uid://dwtr1bsivgwyi" path="res://scripts/TerrainGenerator/systems/generation/height/RidgeLayer.gd" id="3_o2kpo"]
 
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_kf6pj"]
-frequency = 0.0236
-fractal_octaves = 1
-
 [sub_resource type="Resource" id="Resource_5vise"]
 script = ExtResource("2_o2kpo")
-layer_name = "BaseNoiseLayer"
 weight = 0.1
-noise = SubResource("FastNoiseLite_kf6pj")
 metadata/_custom_type_script = "uid://c37580m8v8m0s"
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_o2kpo"]
 noise_type = 2
-seed = 4
-frequency = 0.0153
-fractal_gain = 0.0
+seed = 5
+frequency = 0.0064
+fractal_octaves = 2
+fractal_gain = 0.2
 cellular_distance_function = 1
+cellular_jitter = 0.815
+cellular_return_type = 4
 
 [sub_resource type="Resource" id="Resource_kf6pj"]
 script = ExtResource("3_o2kpo")
-weight = 1.1
+weight = 0.9
 noise = SubResource("FastNoiseLite_o2kpo")
 metadata/_custom_type_script = "uid://dwtr1bsivgwyi"
 

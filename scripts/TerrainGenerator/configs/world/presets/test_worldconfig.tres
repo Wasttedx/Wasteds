@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1_nlbwl")
-chunk_resolution = 32
 chunk_world_size = 128.0
 view_distance_chunks = 1
+grass_render_distance = 0.0
 metadata/_custom_type_script = "uid://cd8qtxmdo3cnl"
