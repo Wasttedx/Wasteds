@@ -7,9 +7,6 @@
 
 [resource]
 script = ExtResource("1_3kn6b")
-grass_count = 0
-tree_count = 0
-rock_count = 0
 grass_scale = Vector2(0.1, 0.2)
 tree_scale = Vector2(0.2, 0.3)
 rock_scale = Vector2(0.3, 0.4)
