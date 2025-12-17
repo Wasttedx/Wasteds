@@ -5,6 +5,7 @@ var chunk_coords: Vector2i
 var current_lod: int = -1
 var is_ready: bool = false
 var is_built: bool = false
+var _is_loading: bool = false # Debug tracking
 
 var world_config: WorldConfig
 var noise: NoiseBuilder
@@ -19,7 +20,6 @@ var build_data: Dictionary = {}
 var mesh_instance: MeshInstance3D
 var collision_body: StaticBody3D
 
-# Note: Added veg_manager to setup arguments
 func setup(coords: Vector2i, wc: WorldConfig, nb: NoiseBuilder, ml: MaterialLibrary, vs: VegetationSpawner, bs: BiomeSelector, smg: SplatMapGenerator, vm: VegetationManager = null):
 	chunk_coords = coords
 	world_config = wc
@@ -40,9 +40,22 @@ func setup(coords: Vector2i, wc: WorldConfig, nb: NoiseBuilder, ml: MaterialLibr
 	
 	is_ready = true
 
+func _enter_tree():
+	# --- DEBUG OVERLAY ---
+	DebugOverlay.monitor_increment("Terrain", "Active Chunks", 1)
+	if not is_built:
+		_is_loading = true
+		DebugOverlay.monitor_increment("Terrain", "Chunks Loading", 1)
+
 func _notification(what):
 	if what == NOTIFICATION_EXIT_TREE:
 		_clear_vegetation()
+		
+		# --- DEBUG OVERLAY ---
+		DebugOverlay.monitor_increment("Terrain", "Active Chunks", -1)
+		# If we were killed while still loading, correct the counter
+		if _is_loading:
+			DebugOverlay.monitor_increment("Terrain", "Chunks Loading", -1)
 
 func apply_prebuilt_data(data: Dictionary):
 	if is_built:
@@ -50,6 +63,11 @@ func apply_prebuilt_data(data: Dictionary):
 		
 	build_data = data
 	is_built = true
+	
+	# --- DEBUG OVERLAY ---
+	if _is_loading:
+		_is_loading = false
+		DebugOverlay.monitor_increment("Terrain", "Chunks Loading", -1)
 
 func set_lod(level: int):
 	if not is_ready or not is_built: return
@@ -82,7 +100,6 @@ func _apply_high_res(material: Material):
 	mesh_instance.material_override = material
 	
 	collision_body = StaticBody3D.new()
-	# Set the collision layer/mask here if you are using specific layers for terrain
 	add_child(collision_body)
 	
 	var collision_shapes: Array = build_data.collision_shapes
@@ -92,17 +109,13 @@ func _apply_high_res(material: Material):
 		shape_node.transform = shape_data.transform
 		collision_body.add_child(shape_node)
 
-	# --- FIX START: Snap Transforms to Collision Mesh ---
 	if build_data.has("vegetation_transforms"):
-		var veg_config: VegetationConfig = veg_spawner.config	
+		var veg_config: VegetationConfig = veg_spawner.config    
 		
-		# Perform the raycast snapping on the main thread now that collision is ready
 		var snapped_transforms = _snap_vegetation_transforms(build_data.vegetation_transforms, veg_config)
 		
-		# Register the corrected vegetation transforms with the global manager
 		if vegetation_manager:
 			vegetation_manager.update_chunk_vegetation(chunk_coords, snapped_transforms)
-	# --- FIX END ---
 
 
 func _apply_low_res(material: Material):
@@ -117,52 +130,39 @@ func _clear_physics():
 		collision_body = null
 
 func _clear_vegetation():
-	# Tell the manager to remove our vegetation
 	if vegetation_manager:
 		vegetation_manager.remove_chunk_vegetation(chunk_coords)
 
-
-# --- NEW FUNCTION: Snaps vegetation to the actual collision surface and ALIGNS TO NORMAL ---
 func _snap_vegetation_transforms(veg_data: Dictionary, veg_config: VegetationConfig) -> Dictionary:
 	if not collision_body or collision_body.get_child_count() == 0:
 		return veg_data
 		
-	# --- START: Splat Map Setup ---
 	if not build_data.has("splat_map_image") or not world_config:
-		push_error("Splat map image or world config missing for vegetation filtering.")
 		return veg_data
 		
 	var splat_image: Image = build_data.splat_map_image
-	var res = world_config.chunk_resolution # Resolution of the image
+	var res = world_config.chunk_resolution 
 	var world_size = world_config.chunk_world_size
 	
-	# World coordinates of the chunk's origin (bottom-left)
 	var coords_x = chunk_coords.x * world_size
 	var coords_z = chunk_coords.y * world_size
 	
-	# If rock weight (B channel) is higher than this, we skip the spawn.
 	const ROCK_TOLERANCE = 0.5 
-	# --- END: Splat Map Setup ---
 	
 	var snapped_data = {}
 	
-	# Get the collision space of the StaticBody3D for raycasting
 	var space = PhysicsServer3D.body_get_space(collision_body.get_rid())
-	
-	if space == RID():
-		push_error("Failed to get Physics Space for Chunk Collision Body (RID is null).")
-		return veg_data
+	if space == RID(): return veg_data
 		
 	var direct_state: PhysicsDirectSpaceState3D = PhysicsServer3D.space_get_direct_state(space)
 	
-	# Mapping offsets from VegetationSpawner's logic
 	var vegetation_y_offsets = {
-		veg_config.grass_mesh: 0.1, # Grass slightly above terrain
-		veg_config.tree_mesh: 0.0,	# Trees start at ground level
-		veg_config.rock_mesh: 0.0,	# Rocks start at ground level
+		veg_config.grass_mesh: 0.1, 
+		veg_config.tree_mesh: 0.0,    
+		veg_config.rock_mesh: 0.0,    
 	}
 
-	var ray_length = 1000.0 # Length of the raycast
+	var ray_length = 1000.0 
 	var parameters = PhysicsRayQueryParameters3D.new()
 	
 	for mesh_res in veg_data:
@@ -170,9 +170,9 @@ func _snap_vegetation_transforms(veg_data: Dictionary, veg_config: VegetationCon
 		var new_transforms: Array[Transform3D] = []
 		
 		var y_offset = vegetation_y_offsets.get(mesh_res, 0.0)
-		var ray_start_y = 500.0 # Must match the value used in VegetationSpawner
+		var ray_start_y = 500.0 
 		
-		parameters.collision_mask = collision_body.collision_mask	
+		parameters.collision_mask = collision_body.collision_mask    
 		parameters.exclude = [collision_body.get_rid()]
 		parameters.collide_with_areas = false
 		parameters.collide_with_bodies = true
@@ -181,30 +181,21 @@ func _snap_vegetation_transforms(veg_data: Dictionary, veg_config: VegetationCon
 			var local_pos = t.origin
 			var global_pos = local_pos + position
 			
-			# --- START: SplatMap Filtering Check ---
-			
-			# 1. Convert World Coordinates to local world coordinates (0 to world_size)
 			var lx = global_pos.x - coords_x
 			var lz = global_pos.z - coords_z
 			
-			# 2. Convert local world coordinates to image pixel coordinates (0 to res-1)
 			var pixel_x = int(round(lx / world_size * (res - 1)))
 			var pixel_z = int(round(lz / world_size * (res - 1)))
 			
-			# Clamp to ensure coordinates are within the image bounds
 			pixel_x = clamp(pixel_x, 0, res - 1)
 			pixel_z = clamp(pixel_z, 0, res - 1)
 			
-			# 3. Read the splat color (R=Grass, G=Dirt, B=Rock, A=Corrupt)
 			var splat_color: Color = splat_image.get_pixel(pixel_x, pixel_z)
 			var rock_weight = splat_color.b 
 			
 			if rock_weight > ROCK_TOLERANCE:
-				# Skip this vegetation instance if the ground is mostly rock
 				continue
-			# --- END: SplatMap Filtering Check ---
 
-			# Ray starts high and goes down in the chunk's local space.
 			parameters.from = Vector3(local_pos.x, ray_start_y, local_pos.z)
 			parameters.to = Vector3(local_pos.x, ray_start_y - ray_length, local_pos.z)
 
@@ -213,33 +204,23 @@ func _snap_vegetation_transforms(veg_data: Dictionary, veg_config: VegetationCon
 			if result.is_empty():
 				continue
 			else:
-				var snapped_y = result.position.y # The exact hit point Y
-				var surface_normal = result.normal # Get the surface normal for alignment
+				var snapped_y = result.position.y 
+				var surface_normal = result.normal 
 				
 				var new_t = t
 				
-				# --- ALIGNMENT LOGIC START ---
-				
-				# 1. Store original scale and rotation
 				var current_basis = t.basis
 				var current_scale = current_basis.get_scale()
 				
-				# 2. Calculate the rotation required to align the object's UP vector (Vector3.UP) 
-				#    to the surface normal, using the correct Godot 4 Quaternion constructor.
 				var rotation_quat: Quaternion = Quaternion(Vector3.UP, surface_normal)
 				
-				# 3. Apply the alignment rotation to the object's existing orientation.
 				var pure_rotation_basis = current_basis.orthonormalized()
 				var aligned_quat = rotation_quat * pure_rotation_basis.get_rotation_quaternion()
 				new_t.basis = Basis(aligned_quat)
 				
-				# 4. Apply the original scale back
 				new_t.basis = new_t.basis.scaled(current_scale)
 				
-				# --- ALIGNMENT LOGIC END ---
-				
-				# 5. Set the final snapped Y position
-				new_t.origin.y = snapped_y + y_offset	
+				new_t.origin.y = snapped_y + y_offset    
 				
 				new_transforms.append(new_t)
 				

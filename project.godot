@@ -17,6 +17,10 @@ boot_splash/bg_color=Color(0, 0, 0, 1)
 boot_splash/image="uid://ctqc8jytgiiy7"
 config/icon="uid://ctqc8jytgiiy7"
 
+[autoload]
+
+DebugOverlay="*res://scripts/DebugOverlay.gd"
+
 [debug]
 
 settings/stdout/print_fps=true

@@ -23,7 +23,7 @@ var material_lib: MaterialLibrary
 var veg_spawner: VegetationSpawner
 var biome_selector: BiomeSelector
 var splat_map_generator: SplatMapGenerator
-var vegetation_manager: VegetationManager # New: Reference to the manager
+var vegetation_manager: VegetationManager 
 
 var chunks := {}
 var generation_queue := []
@@ -40,7 +40,6 @@ func _ready():
 	if player_path: player = get_node_or_null(player_path)
 	
 	_initialize_systems()
-	# Removed: _create_defaults_if_missing() is no longer needed for grass mesh
 	
 	if player:
 		var spawn_pos = player.global_position
@@ -76,11 +75,8 @@ func _start_full_world_loading():
 
 
 func _initialize_systems():
-	# Initialize Systems
 	noise_builder = NoiseBuilder.new(noise_config, height_pipeline)
-	
 	biome_selector = BiomeSelector.new(biome_configs, noise_config.noise_seed, noise_builder)
-	
 	splat_map_generator = SplatMapGenerator.new(noise_builder, world_config)
 	
 	var textures = {
@@ -91,14 +87,10 @@ func _initialize_systems():
 	}
 	
 	material_lib = MaterialLibrary.new(terrain_shader, textures)
-	
 	veg_spawner = VegetationSpawner.new(veg_config, noise_builder, world_config.chunk_world_size)
-	
-	# New: Initialize and add VegetationManager
 	vegetation_manager = VegetationManager.new()
 	add_child(vegetation_manager)
 
-# Removed: func _create_defaults_if_missing():
 
 func _update_chunks():
 	var p_pos = player.global_position if player else Vector3.ZERO
@@ -118,9 +110,8 @@ func _update_chunks():
 				generation_queue.append(c)
 	
 	# 2. Unload finished chunks
-	for c in chunks.keys().duplicate(): # Duplicate keys for safe iteration
+	for c in chunks.keys().duplicate(): 
 		if not active_coords.has(c):
-			# New: Ensure vegetation is removed when chunk is freed
 			if vegetation_manager:
 				vegetation_manager.remove_chunk_vegetation(c)
 			
@@ -128,29 +119,28 @@ func _update_chunks():
 			chunks.erase(c)
 	
 	# 3. Stop and clean up threads for unloaded chunks
-	for c in active_build_threads.keys().duplicate(): # Duplicate keys for safe iteration
+	for c in active_build_threads.keys().duplicate(): 
 		if not active_coords.has(c):
 			var builder_thread: ChunkBuilderThread = active_build_threads.get(c)
 			
-			# FIX: Check if the thread object is still valid before calling cleanup()
 			if is_instance_valid(builder_thread):
 				var finished_thread = builder_thread.cleanup()
-			
 				active_build_threads.erase(c)
+				# --- DEBUG OVERLAY ---
+				DebugOverlay.monitor_increment("Threads", "Active Workers", -1)
 
 				if is_instance_valid(finished_thread) and finished_thread.is_started():
 					finished_thread.wait_to_finish()
 			else:
-				# Defensive: If the thread is null/invalid, just erase the key.
 				active_build_threads.erase(c)
 	
 	for c in active_build_threads.keys():
 		if not active_coords.has(c):
 			var builder_thread: ChunkBuilderThread = active_build_threads.get(c)
-
 			var finished_thread = builder_thread.cleanup()
-
 			active_build_threads.erase(c)
+			# --- DEBUG OVERLAY ---
+			DebugOverlay.monitor_increment("Threads", "Active Workers", -1)
 
 			if is_instance_valid(finished_thread) and finished_thread.is_started():
 				finished_thread.wait_to_finish()
@@ -163,7 +153,6 @@ func _update_lods():
 	
 	for c in chunks:
 		var chunk = chunks[c]
-		
 		var dist_x = abs(c.x - p_cx)
 		var dist_z = abs(c.y - p_cz)
 		var dist = max(dist_x, dist_z)
@@ -175,6 +164,9 @@ func _update_lods():
 		chunk.set_lod(target_lod)
 
 func _process_queue():
+	# --- DEBUG OVERLAY ---
+	# Report Queue size
+	DebugOverlay.monitor_set("Terrain", "Queue Size", generation_queue.size())
 	
 	if active_build_threads.size() < world_config.max_chunks_per_frame and not generation_queue.is_empty():
 		var c = generation_queue.pop_front()
@@ -189,7 +181,7 @@ func _process_queue():
 					veg_spawner,
 					biome_selector,
 					splat_map_generator,
-					vegetation_manager # New: Pass the vegetation manager
+					vegetation_manager 
 					)
 		
 		chunks[c] = chunk
@@ -199,38 +191,38 @@ func _process_queue():
 		builder_thread.start_build(c, world_config, noise_builder, biome_selector, splat_map_generator, veg_spawner)
 		active_build_threads[c] = builder_thread
 		
+		# --- DEBUG OVERLAY ---
+		DebugOverlay.monitor_increment("Threads", "Active Workers", 1)
+		
 func _on_chunk_build_finished(coords: Vector2i, build_data: Dictionary):
 	if active_build_threads.has(coords):
 		var builder_thread: ChunkBuilderThread = active_build_threads[coords]
 		
 		active_build_threads.erase(coords)
+		# --- DEBUG OVERLAY ---
+		DebugOverlay.monitor_increment("Threads", "Active Workers", -1)
 		
 		if chunks.has(coords):
 			var chunk: TerrainChunk = chunks[coords]
 			chunk.apply_prebuilt_data(build_data)
-			
 			call_deferred("_update_lods")
 
 		if player and not _initial_spawn_chunk_built:
 			var h = noise_builder.get_height(player.global_position.x, player.global_position.z)
-			
 			player.global_position.y = h + 2.0
 			print("✅ Initial Spawn Chunk built. Player placed at Y:", player.global_position.y)
-			
 			call_deferred("_start_full_world_loading")
 		
 		var finished_thread = builder_thread.cleanup()
 		
 		if finished_thread and finished_thread.is_started():
 			threads_to_join.append(finished_thread)
-			
 			Callable(finished_thread, "wait_to_finish").call_deferred()
 
 func _stop_all_threads():
 	for coords in active_build_threads.keys().duplicate():
 		if active_build_threads.has(coords):
 			var builder_thread: ChunkBuilderThread = active_build_threads[coords]
-			
 			var finished_thread = builder_thread.cleanup()
 			active_build_threads.erase(coords)
 			

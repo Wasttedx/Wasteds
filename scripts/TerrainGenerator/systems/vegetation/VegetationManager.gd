@@ -5,15 +5,14 @@ class_name VegetationManager
 var _active_chunks := {}
 
 func update_chunk_vegetation(chunk_coords: Vector2i, vegetation_data: Dictionary) -> void:
-	# Clean up any existing vegetation for this chunk first (e.g. reload or update)
 	remove_chunk_vegetation(chunk_coords)
 	
 	if vegetation_data.is_empty():
 		return
 		
 	var instances: Array[MultiMeshInstance3D] = []
+	var total_added_this_chunk = 0
 	
-	# vegetation_data is expected to be { Mesh: Array[Transform3D] }
 	for mesh_res in vegetation_data:
 		var transforms: Array[Transform3D] = vegetation_data[mesh_res]
 		
@@ -34,15 +33,27 @@ func update_chunk_vegetation(chunk_coords: Vector2i, vegetation_data: Dictionary
 		add_child(mmi)
 		
 		instances.append(mmi)
+		total_added_this_chunk += transforms.size()
 	
 	_active_chunks[chunk_coords] = instances
+	
+	# --- DEBUG OVERLAY ---
+	DebugOverlay.monitor_increment("Vegetation", "Instance Count", total_added_this_chunk)
 
 func remove_chunk_vegetation(chunk_coords: Vector2i) -> void:
 	if _active_chunks.has(chunk_coords):
 		var instances = _active_chunks[chunk_coords]
+		var total_removed = 0
+		
 		for mmi in instances:
+			if mmi.multimesh:
+				total_removed += mmi.multimesh.instance_count
 			mmi.queue_free()
+			
 		_active_chunks.erase(chunk_coords)
+
+		# --- DEBUG OVERLAY ---
+		DebugOverlay.monitor_increment("Vegetation", "Instance Count", -total_removed)
 
 func reset() -> void:
 	for coords in _active_chunks.keys():
