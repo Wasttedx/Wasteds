@@ -1,43 +1,32 @@
 # scripts/DebugOverlay.gd
 extends CanvasLayer
 
-# --- Configuration ---
 const TOGGLE_ACTION: String = "debug_toggle" 
-const REFRESH_RATE: float = 0.1 # Update UI every 100ms
+const REFRESH_RATE: float = 0.1 
 
-# --- State ---
 var _visible: bool = false
 var _stats: Dictionary = {} 
 var _time_since_last_update: float = 0.0
 var _label: Label
+var _bg: ColorRect
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	layer = 128
 	visible = false
-	
 	_setup_ui()
 	_setup_input()
 
 func _setup_ui() -> void:
+	# Create a background that auto-resizes
+	_bg = ColorRect.new()
+	_bg.color = Color(0, 0, 0, 0.6)
+	_bg.position = Vector2(10, 10)
+	add_child(_bg)
+
 	_label = Label.new()
 	_label.position = Vector2(20, 20)
 	_label.modulate = Color(0.2, 1.0, 0.2) # Matrix Green
-	
-	var bg = ColorRect.new()
-	bg.color = Color(0, 0, 0, 0.6)
-	bg.show_behind_parent = true
-	bg.anchor_right = 1
-	bg.anchor_bottom = 1
-	bg.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	bg.grow_vertical = Control.GROW_DIRECTION_BOTH
-	# Add some padding to background
-	bg.offset_left = -10
-	bg.offset_top = -10
-	bg.offset_right = 10
-	bg.offset_bottom = 10
-	
-	_label.add_child(bg)
 	add_child(_label)
 
 func _setup_input() -> void:
@@ -53,24 +42,19 @@ func _input(event: InputEvent) -> void:
 		visible = _visible
 
 func _process(delta: float) -> void:
-	if not _visible:
-		return
+	if not _visible: return
 
 	_time_since_last_update += delta
-	if _time_since_last_update < REFRESH_RATE:
-		return
-	_time_since_last_update = 0.0
-
-	_update_text()
+	if _time_since_last_update >= REFRESH_RATE:
+		_time_since_last_update = 0.0
+		_update_text()
 
 # --- Public API ---
 
-## Set a value directly (Position, State Strings, etc)
 func monitor_set(category: String, key: String, value: Variant) -> void:
 	if not _stats.has(category): _stats[category] = {}
 	_stats[category][key] = value
 
-## Add/Subtract from a number (Counts)
 func monitor_increment(category: String, key: String, amount: int) -> void:
 	if not _stats.has(category): _stats[category] = {}
 	var current = _stats[category].get(key, 0)
@@ -81,7 +65,6 @@ func monitor_increment(category: String, key: String, amount: int) -> void:
 func _update_text() -> void:
 	var s = "=== SYSTEM METRICS ===\n"
 	
-	# Engine Stats
 	var fps = Engine.get_frames_per_second()
 	var mem = OS.get_static_memory_usage() / 1048576.0
 	var vram = Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0
@@ -96,7 +79,6 @@ func _update_text() -> void:
 	s += "Draw Calls: %d\n" % [draw_calls]
 	s += "Nodes: %d  |  Objects: %d\n\n" % [nodes, objects]
 	
-	# Custom Stats
 	for category in _stats:
 		s += "--- %s ---\n" % category
 		for key in _stats[category]:
@@ -110,3 +92,5 @@ func _update_text() -> void:
 		s += "\n"
 	
 	_label.text = s
+	# Adjust background size to fit text
+	_bg.size = _label.get_combined_minimum_size() + Vector2(20, 20)

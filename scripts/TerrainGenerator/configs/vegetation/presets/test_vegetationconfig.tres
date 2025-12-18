@@ -1,13 +1,43 @@
-[gd_resource type="Resource" script_class="VegetationConfig" load_steps=5 format=3 uid="uid://uglmb1knhxhw"]
+[gd_resource type="Resource" script_class="VegetationConfig" load_steps=9 format=3 uid="uid://biqi3vgofvqii"]
 
 [ext_resource type="ArrayMesh" uid="uid://ykdf6pvqsjlh" path="res://Models/vegetation/grass.res" id="1_2y7np"]
 [ext_resource type="Script" uid="uid://ccij35yi61h1j" path="res://scripts/TerrainGenerator/configs/vegetation/VegetationConfig.gd" id="1_3kn6b"]
+[ext_resource type="Script" uid="uid://1pq137qppoyv" path="res://scripts/TerrainGenerator/configs/vegetation/vegetationitem.gd" id="1_ulvbm"]
 [ext_resource type="ArrayMesh" uid="uid://cbrt7ej1lrnmx" path="res://Models/vegetation/rock.res" id="2_uxton"]
 [ext_resource type="ArrayMesh" uid="uid://cisylc3rtx4cy" path="res://Models/vegetation/tree.res" id="3_lj0ue"]
 
+[sub_resource type="Resource" id="Resource_uxton"]
+script = ExtResource("1_ulvbm")
+name = "grass"
+mesh = ExtResource("1_2y7np")
+density = 10000
+scale_range = Vector2(0.5, 0.7)
+max_slope = 0.1
+splat_weight_threshold = 1.0
+metadata/_custom_type_script = "uid://1pq137qppoyv"
+
+[sub_resource type="Resource" id="Resource_drrxr"]
+script = ExtResource("1_ulvbm")
+name = "Tree"
+mesh = ExtResource("3_lj0ue")
+density = 50
+scale_range = Vector2(0.5, 0.7)
+min_height = -25.0
+max_height = -15.0
+max_slope = 20.0
+splat_weight_threshold = 1.0
+metadata/_custom_type_script = "uid://1pq137qppoyv"
+
+[sub_resource type="Resource" id="Resource_7u88o"]
+script = ExtResource("1_ulvbm")
+name = "rock"
+mesh = ExtResource("2_uxton")
+density = 40
+splat_weight_threshold = 0.1
+splat_channel = 2
+metadata/_custom_type_script = "uid://1pq137qppoyv"
+
 [resource]
 script = ExtResource("1_3kn6b")
-grass_scale = Vector2(0.1, 0.2)
-tree_scale = Vector2(0.2, 0.3)
-rock_scale = Vector2(0.3, 0.4)
+items = Array[ExtResource("1_ulvbm")]([SubResource("Resource_uxton"), SubResource("Resource_drrxr"), SubResource("Resource_7u88o")])
 metadata/_custom_type_script = "uid://ccij35yi61h1j"

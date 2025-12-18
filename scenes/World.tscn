@@ -4,7 +4,7 @@
 [ext_resource type="Resource" uid="uid://06ok8j1dhx2u" path="res://scripts/TerrainGenerator/configs/noise/Noise presets/test_noiseconfig.tres" id="2_0uv0p"]
 [ext_resource type="Resource" uid="uid://dalj3jo0tnmfd" path="res://scripts/TerrainGenerator/configs/world/presets/test_worldconfig.tres" id="2_1lgw5"]
 [ext_resource type="Resource" uid="uid://c7l6nlwvg756p" path="res://scripts/TerrainGenerator/configs/noise/Height presets/test_heightpipelineconfig.tres" id="3_b3faq"]
-[ext_resource type="Resource" uid="uid://uglmb1knhxhw" path="res://scripts/TerrainGenerator/configs/vegetation/presets/test_vegetationconfig.tres" id="4_0uv0p"]
+[ext_resource type="Resource" uid="uid://biqi3vgofvqii" path="res://scripts/TerrainGenerator/configs/vegetation/presets/test_vegetationconfig.tres" id="4_0uv0p"]
 [ext_resource type="PackedScene" uid="uid://b5v42w3nm4eox" path="res://scenes/player.tscn" id="5_1lgw5"]
 [ext_resource type="Script" uid="uid://s5qsie30t0f6" path="res://scripts/TerrainGenerator/configs/biome/BiomeConfig.gd" id="5_b3faq"]
 [ext_resource type="Resource" uid="uid://ddtqns1mvuqkg" path="res://scripts/TerrainGenerator/configs/biome/presets/test_biomeconfig.tres" id="6_ygioq"]

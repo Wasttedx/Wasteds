@@ -58,6 +58,25 @@ func _apply_noise_config(cfg: NoiseConfig):
 	if height_pipeline:
 		_initialize_pipeline_seeds()
 
+# --- NEW: NORMAL CALCULATION FOR SLOPE CHECKS ---
+
+func get_normal(world_x: float, world_z: float) -> Vector3:
+	# Small offset used to sample neighboring heights
+	var step := 0.2 
+	
+	var h_l = get_height(world_x - step, world_z)
+	var h_r = get_height(world_x + step, world_z)
+	var h_d = get_height(world_x, world_z - step)
+	var h_u = get_height(world_x, world_z + step)
+	
+	# Central difference method to find the slope vectors
+	# The normal is the cross product of the X-tangent and Z-tangent
+	var normal = Vector3(h_l - h_r, step * 2.0, h_d - h_u).normalized()
+	
+	return normal
+
+# -----------------------------------------------
+
 func push_config_override(biome_config: BiomeConfig):
 	_config_stack.append(config)
 	var new_config = config.duplicate()
@@ -75,7 +94,6 @@ func pop_config_override():
 	config = _config_stack.pop_back()
 	_apply_noise_config(config)
 
-# PRIVATE FUNCTION: Calculates only the UN-SCALED base noise value
 func _get_base_height_unscaled(world_x: float, world_z: float) -> float:
 	var nx = world_x + config.noise_offset.x
 	var nz = world_z + config.noise_offset.y
@@ -83,45 +101,35 @@ func _get_base_height_unscaled(world_x: float, world_z: float) -> float:
 	var n1 = _noise.get_noise_2d(nx, nz) * 0.5 + 0.5    
 	var n2 = _noise.get_noise_2d(nx * 2.0, nz * 2.0) * 0.5 + 0.5
 	
-	# The unscaled base noise (before multiplying by height_multiplier)
 	return (n1 * 0.7 + n2 * 0.3 - 0.5)
 
-# PUBLIC FUNCTION: Always returns the final, fully processed height (SCALED)
 func get_height(world_x: float, world_z: float) -> float:
 	if height_pipeline and not height_pipeline.layers.is_empty():
 		return _get_pipeline_height(world_x, world_z)
 	
-	# Returns the base height fully scaled
 	return _get_base_height_unscaled(world_x, world_z) * config.height_multiplier
 
-# MODIFIED FUNCTION: Starts with base height (SCALED) and applies layer modifications
 func _get_pipeline_height(x: float, z: float) -> float:
-	# 1. Start with the SCALED base noise height
 	var total_height: float = _get_base_height_unscaled(x, z) * config.height_multiplier
 	
-	# 2. Apply layers
 	for layer in height_pipeline.layers:
 		if not layer.enabled:
 			continue
 			
-		var layer_val = layer.get_height(x, z) # This is the layer's raw influence (already includes layer's weight)
+		var layer_val = layer.get_height(x, z) 
 		
 		match layer.blend_mode:
 			BaseNoiseLayer.BlendMode.ADD:
-				# Scale the layer's raw height modification
 				total_height += layer_val * config.height_multiplier
 			BaseNoiseLayer.BlendMode.SUBTRACT:
 				total_height -= layer_val * config.height_multiplier
 			BaseNoiseLayer.BlendMode.MULTIPLY:
-				# Layer val is a factor (0.0 to 1.0)
 				total_height *= layer_val
 			BaseNoiseLayer.BlendMode.MIN:
-				# Assuming layer_val here is an already SCALED height value if it's meant to replace
 				total_height = min(total_height, layer_val) 
 			BaseNoiseLayer.BlendMode.MAX:
 				total_height = max(total_height, layer_val)
 			BaseNoiseLayer.BlendMode.REPLACE:
-				# Layer val is an unscaled height value
 				total_height = layer_val * config.height_multiplier
 				
 	return total_height

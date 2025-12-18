@@ -6,6 +6,3 @@ class_name WorldConfig
 @export var chunk_world_size: float = 32.0
 @export var view_distance_chunks: int = 2
 @export var max_chunks_per_frame: int = 1
-
-@export_group("Optimization")
-@export var grass_render_distance: float = 20.0
