@@ -47,6 +47,8 @@ func set_lod(level: int):
 	if current_lod == level: return
 	
 	current_lod = level
+	
+	# Always clear existing specialized data before switching
 	_clear_physics()
 	_clear_vegetation()
 	
@@ -65,7 +67,7 @@ func _apply_high_res(material: Material):
 	mesh_instance.mesh = mesh
 	mesh_instance.material_override = material
 	
-	# Build Physics
+	# Build Physics (Required for vegetation snapping and player walking)
 	collision_body = StaticBody3D.new()
 	collision_body.collision_layer = 1
 	add_child(collision_body)
@@ -76,12 +78,22 @@ func _apply_high_res(material: Material):
 		shape_node.transform = shape_data.transform
 		collision_body.add_child(shape_node)
 
-	# Trigger Vegetation Snapping after physics is ready
+	# Trigger Vegetation Snapping ONLY in high res
 	if build_data.has("vegetation_transforms") and vegetation_manager:
-		get_tree().create_timer(0.1).timeout.connect(_snap_vegetation)
+		# Small delay ensures physics server registers the body
+		get_tree().create_timer(0.05).timeout.connect(_snap_vegetation)
+
+func _apply_low_res(material: Material):
+	var mesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, build_data.low_res_mesh_arrays)
+	mesh_instance.mesh = mesh
+	mesh_instance.material_override = material
+	# Low res has no physics or vegetation (handled by clear calls in set_lod)
 
 func _snap_vegetation():
 	if not is_instance_valid(collision_body) or not is_inside_tree(): return
+	if current_lod != 0: return # Safety check
+	
 	var snapped = _snap_vegetation_transforms(build_data.vegetation_transforms)
 	vegetation_manager.update_chunk_vegetation(chunk_coords, snapped)
 
@@ -100,7 +112,6 @@ func _snap_vegetation_transforms(veg_data: Dictionary) -> Dictionary:
 		var new_transforms: Array[Transform3D] = []
 		
 		for t in original_transforms:
-			# Start ray from world space high above the chunk
 			var ray_start = global_position + Vector3(t.origin.x, 1500.0, t.origin.z)
 			var ray_end = global_position + Vector3(t.origin.x, -1000.0, t.origin.z)
 			
@@ -112,7 +123,6 @@ func _snap_vegetation_transforms(veg_data: Dictionary) -> Dictionary:
 				var new_t = t
 				new_t.origin = result.position + (result.normal * item_res.y_offset)
 				
-				# Surface alignment logic
 				var normal = result.normal
 				var basis_x = t.basis.x.normalized()
 				var basis_z = normal.cross(basis_x).normalized()
@@ -128,12 +138,6 @@ func _snap_vegetation_transforms(veg_data: Dictionary) -> Dictionary:
 			snapped_data[item_idx] = new_transforms
 			
 	return snapped_data
-
-func _apply_low_res(material: Material):
-	var mesh = ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, build_data.low_res_mesh_arrays)
-	mesh_instance.mesh = mesh
-	mesh_instance.material_override = material
 
 func _clear_physics():
 	if collision_body:

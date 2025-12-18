@@ -53,13 +53,7 @@ func _notification(what):
 func _process(_delta):
 	if not player: return
 	
-	# Update Debug Metrics
-	if has_node("/root/DebugOverlay"):
-		var overlay = get_node("/root/DebugOverlay")
-		overlay.monitor_set("Player", "Position", player.global_position)
-		overlay.monitor_set("World", "Active Chunks", chunks.size())
-		overlay.monitor_set("World", "Gen Queue", generation_queue.size())
-		overlay.monitor_set("World", "Active Threads", active_build_threads.size())
+	_update_debug()
 
 	if _initial_spawn_chunk_built:
 		_update_chunks()
@@ -145,6 +139,27 @@ func _on_chunk_build_finished(coords: Vector2i, build_data: Dictionary):
 		
 		var t = builder_thread.cleanup()
 		if t: threads_to_join.append(t)
+
+func _update_debug():
+	if has_node("/root/DebugOverlay"):
+		var overlay = get_node("/root/DebugOverlay")
+		overlay.monitor_set("Player", "Position", player.global_position)
+		overlay.monitor_set("World", "Total Chunks", chunks.size())
+		overlay.monitor_set("World", "In Queue", generation_queue.size())
+		overlay.monitor_set("World", "Active Threads", active_build_threads.size())
+		
+		var high_res_count = 0
+		var low_res_count = 0
+		for c in chunks:
+			if chunks[c].current_lod == 0:
+				high_res_count += 1
+			else:
+				low_res_count += 1
+		
+		overlay.monitor_set("LOD", "High Res (LOD0)", high_res_count)
+		overlay.monitor_set("LOD", "Low Res (LOD1)", low_res_count)
+		# Track if vegetation matches the high res count
+		overlay.monitor_set("LOD", "Veg Expected", high_res_count)
 
 func _clean_finished_threads():
 	for i in range(threads_to_join.size() - 1, -1, -1):

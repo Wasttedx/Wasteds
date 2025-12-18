@@ -41,10 +41,5 @@ func _physics_process(delta):
 		
 	velocity = new_velocity
 	move_and_slide()
-
-	# --- DEBUG OVERLAY UPDATE ---
-	DebugOverlay.monitor_set("Game", "Player Pos", global_position)
-	# Assuming chunks are e.g. 64 units, roughly calc coord
-	# You can replace 64 with your actual chunk size config if you access it here
-	var approx_chunk = Vector2i(floor(global_position.x / 64.0), floor(global_position.z / 64.0)) 
-	DebugOverlay.monitor_set("Game", "Chunk Coord", approx_chunk)
+	
+	# The debug lines were removed from here to prevent duplication with the Generator.
