@@ -55,6 +55,7 @@ func _notification(what):
 		DebugOverlay.monitor_increment("Terrain", "Active Chunks", -1)
 		# If we were killed while still loading, correct the counter
 		if _is_loading:
+			_is_loading = false
 			DebugOverlay.monitor_increment("Terrain", "Chunks Loading", -1)
 
 func apply_prebuilt_data(data: Dictionary):
@@ -204,7 +205,7 @@ func _snap_vegetation_transforms(veg_data: Dictionary, veg_config: VegetationCon
 			if result.is_empty():
 				continue
 			else:
-				var snapped_y = result.position.y 
+				var snapped_y = result.position.y + y_offset
 				var surface_normal = result.normal 
 				
 				var new_t = t
@@ -212,18 +213,22 @@ func _snap_vegetation_transforms(veg_data: Dictionary, veg_config: VegetationCon
 				var current_basis = t.basis
 				var current_scale = current_basis.get_scale()
 				
+				# Create a rotation that maps Vector3.UP to the surface normal
 				var rotation_quat: Quaternion = Quaternion(Vector3.UP, surface_normal)
 				
+				# Get the rotation part of the current transform without scale
 				var pure_rotation_basis = current_basis.orthonormalized()
-				var aligned_quat = rotation_quat * pure_rotation_basis.get_rotation_quaternion()
-				new_t.basis = Basis(aligned_quat)
 				
-				new_t.basis = new_t.basis.scaled(current_scale)
+				# Apply the slope rotation
+				var aligned_basis = Basis(rotation_quat) * pure_rotation_basis
 				
-				new_t.origin.y = snapped_y + y_offset    
+				# Re-apply scale
+				new_t.basis = aligned_basis.scaled(current_scale)
+				new_t.origin = Vector3(local_pos.x, snapped_y, local_pos.z)
 				
 				new_transforms.append(new_t)
-				
-		snapped_data[mesh_res] = new_transforms
 		
+		if not new_transforms.is_empty():
+			snapped_data[mesh_res] = new_transforms
+			
 	return snapped_data

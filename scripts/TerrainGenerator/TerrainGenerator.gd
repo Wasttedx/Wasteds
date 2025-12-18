@@ -31,7 +31,12 @@ var active_build_threads := {}
 var threads_to_join := []
 var player: Node3D
 
+# --- LOD & SEAM SETTINGS ---
 const LOD_HIGH_RES_DISTANCE: int = 1
+# Keeps chunks loaded slightly beyond view distance to prevent load/unload loops at seams
+const UNLOAD_HYSTERESIS_CHUNKS: int = 2
+# Keeps chunks in High Res slightly beyond the threshold to prevent LOD flickering
+const LOD_HYSTERESIS_CHUNKS: int = 1
 
 var _initial_spawn_chunk_built: bool = false
 
@@ -97,30 +102,44 @@ func _update_chunks():
 	var p_cx = int(floor(p_pos.x / world_config.chunk_world_size))
 	var p_cz = int(floor(p_pos.z / world_config.chunk_world_size))
 	
-	var range_c = world_config.view_distance_chunks
-	var active_coords = {}
+	var view_range = world_config.view_distance_chunks
 	
-	# 1. Identify active chunks and queue missing ones
-	for z in range(-range_c, range_c + 1):
-		for x in range(-range_c, range_c + 1):
+	# 1. Identify active chunks to LOAD (Strict View Distance)
+	var required_coords = {}
+	for z in range(-view_range, view_range + 1):
+		for x in range(-view_range, view_range + 1):
 			var c = Vector2i(p_cx + x, p_cz + z)
-			active_coords[c] = true
+			required_coords[c] = true
 			
 			if not chunks.has(c) and not active_build_threads.has(c) and not generation_queue.has(c):
 				generation_queue.append(c)
 	
-	# 2. Unload finished chunks
+	# 2. Identify chunks to UNLOAD (View Distance + Hysteresis Buffer)
+	# We iterate existing chunks and check if they are too far away
+	var _unload_distance_sq = pow(view_range + UNLOAD_HYSTERESIS_CHUNKS, 2)
+	
 	for c in chunks.keys().duplicate(): 
-		if not active_coords.has(c):
+		# Use squared distance logic for unloading circle rather than square grid to separate load/unload shapes
+		var dist_x = c.x - p_cx
+		var dist_z = c.y - p_cz
+		# Using Chebyshev (Box) distance for consistency with Grid logic, but adding buffer
+		var dist = max(abs(dist_x), abs(dist_z))
+		
+		if dist > (view_range + UNLOAD_HYSTERESIS_CHUNKS):
 			if vegetation_manager:
 				vegetation_manager.remove_chunk_vegetation(c)
 			
 			chunks[c].queue_free()
 			chunks.erase(c)
 	
-	# 3. Stop and clean up threads for unloaded chunks
+	# 3. Clean up threads for chunks that went out of range while building
 	for c in active_build_threads.keys().duplicate(): 
-		if not active_coords.has(c):
+		var dist_x = c.x - p_cx
+		var dist_z = c.y - p_cz
+		var dist = max(abs(dist_x), abs(dist_z))
+		
+		# If the player moved so fast that a loading chunk is now way out of unload range
+		if dist > (view_range + UNLOAD_HYSTERESIS_CHUNKS):
 			var builder_thread: ChunkBuilderThread = active_build_threads.get(c)
 			
 			if is_instance_valid(builder_thread):
@@ -133,17 +152,6 @@ func _update_chunks():
 					finished_thread.wait_to_finish()
 			else:
 				active_build_threads.erase(c)
-	
-	for c in active_build_threads.keys():
-		if not active_coords.has(c):
-			var builder_thread: ChunkBuilderThread = active_build_threads.get(c)
-			var finished_thread = builder_thread.cleanup()
-			active_build_threads.erase(c)
-			# --- DEBUG OVERLAY ---
-			DebugOverlay.monitor_increment("Threads", "Active Workers", -1)
-
-			if is_instance_valid(finished_thread) and finished_thread.is_started():
-				finished_thread.wait_to_finish()
 
 
 func _update_lods():
@@ -157,9 +165,23 @@ func _update_lods():
 		var dist_z = abs(c.y - p_cz)
 		var dist = max(dist_x, dist_z)
 		
-		var target_lod = 0
-		if dist > LOD_HIGH_RES_DISTANCE:
-			target_lod = 1
+		var current_lod = chunk.current_lod
+		var target_lod = 1 # Default to Low Res
+		
+		# Hysteresis Logic:
+		# If we are already High Res (0), stay High Res until we cross (Limit + Buffer)
+		# If we are Low Res (1), only switch to High Res if we are strictly inside (Limit)
+		
+		if current_lod == 0:
+			if dist > (LOD_HIGH_RES_DISTANCE + LOD_HYSTERESIS_CHUNKS):
+				target_lod = 1
+			else:
+				target_lod = 0
+		else:
+			if dist <= LOD_HIGH_RES_DISTANCE:
+				target_lod = 0
+			else:
+				target_lod = 1
 			
 		chunk.set_lod(target_lod)
 
